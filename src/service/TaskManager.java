@@ -10,118 +10,162 @@ import java.util.HashMap;
 
 public class TaskManager {
 
-    private final TaskKeeper taskKeeper;
+    private final HashMap<Integer, Epic> epicStorage = new HashMap<>();
+    private final HashMap<Integer, SubTask> subTaskStorage = new HashMap<>();
+    private final HashMap<Integer, Task> taskStorage = new HashMap<>();
+    private int id;
 
-    public TaskManager(TaskKeeper taskKeeper) {
-        this.taskKeeper = taskKeeper;
+    public int getNextId() {
+        id++;
+        return id;
+    }
+
+    public int getCurrentId() {
+        return id;
     }
 
     public void createTask(Task task) {
-        if (!isExistingTask(task)) {
-            task.setId(TaskSequence.getNextId());
-            taskKeeper.putTask(task);
-        }
+        task.setId(getNextId());
+        taskStorage.put(task.getId(), task);
     }
 
     public void createSubTask(SubTask subTask) {
-        if (!isExistingSubTask(subTask) && isExistingParentEpic(subTask)) {
-            subTask.setId(TaskSequence.getNextId());
-            taskKeeper.putSubTask(subTask);
+        Epic epic = epicStorage.get(subTask.getEpicId());
+        if (epic != null) {
+            int newSubtaskId = getNextId();
+            subTask.setId(newSubtaskId);
+            epic.addSubTaskId(newSubtaskId);
+            subTaskStorage.put(newSubtaskId, subTask);
         }
     }
 
     public void createEpic(Epic epic) {
-        if (!isExistingEpic(epic)) {
-            epic.setId(TaskSequence.getNextId());
-            taskKeeper.putEpic(epic);
-        }
+        epic.setId(getNextId());
+        epicStorage.put(epic.getId(), epic);
     }
 
 
     public ArrayList<Task> getTasks() {
-        return new ArrayList<>(taskKeeper.getTaskStorage().values());
+        return new ArrayList<>(taskStorage.values());
     }
 
     public ArrayList<SubTask> getSubTasks() {
-        return new ArrayList<>(taskKeeper.getSubTaskStorage().values());
+        return new ArrayList<>(subTaskStorage.values());
     }
 
     public ArrayList<Epic> getEpics() {
-        return new ArrayList<>(taskKeeper.getEpicStorage().values());
+        return new ArrayList<>(epicStorage.values());
     }
 
     public Task getTask(int taskId) {
-        return taskKeeper.getTaskStorage().get(taskId);
-
+        return taskStorage.get(taskId);
     }
 
     public SubTask getSubTask(int subTaskId) {
-        return taskKeeper.getSubTaskStorage().get(subTaskId);
+        return subTaskStorage.get(subTaskId);
     }
 
     public Epic getEpic(int epicId) {
-        return taskKeeper.getEpicStorage().get(epicId);
+        return epicStorage.get(epicId);
     }
 
     public void deleteTasks() {
-        taskKeeper.clearTasks();
+        taskStorage.clear();
     }
 
     public void deleteSubTasks() {
-        taskKeeper.clearSubTasks();
-        ArrayList<Epic> epics = getEpics();
-        for (Epic epic : epics) {
-            updateEpic(epic.getId());
+        subTaskStorage.clear();
+        if (!epicStorage.isEmpty()) {
+            for (Epic epic : epicStorage.values()) {
+                epic.cleanSubTaskIds();
+                updateEpicStatus(epic.getId());
+            }
         }
     }
 
     public void deleteEpics() {
-        taskKeeper.clearEpics();
-        taskKeeper.clearSubTasks();
+        epicStorage.clear();
+        subTaskStorage.clear();
     }
 
     public void deleteTask(int taskId) {
-        taskKeeper.deleteTask(taskId);
+        taskStorage.remove(taskId);
     }
 
     public void deleteSubTask(int subTaskId) {
-        SubTask subTask = getSubTask(subTaskId);
-        taskKeeper.deleteSubTask(subTaskId);
-        updateEpic(subTask.getEpicId());
+        SubTask subTask = subTaskStorage.get(subTaskId);
+        if (subTask != null) {
+            Epic epic = epicStorage.get(subTask.getEpicId());
+            if (epic != null) {
+                epic.removeSubTask(subTaskId);
+                subTaskStorage.remove(subTaskId);
+                updateEpicStatus(epic.getId());
+            }
+        }
     }
 
     public void deleteEpic(int epicId) {
-        ArrayList<SubTask> subTasksOfEpic = getSubtasksOfEpic(epicId);
-        for (SubTask subTask : subTasksOfEpic) {
-            taskKeeper.deleteSubTask(subTask.getId());
+        Epic epic = epicStorage.get(epicId);
+        if (epic != null) {
+            ArrayList<Integer> subTasksOfEpic = epic.getSubTaskIds();
+            if (!subTasksOfEpic.isEmpty()) {
+                for (Integer subTaskId : subTasksOfEpic) {
+                    subTaskStorage.remove(subTaskId);
+                }
+                epicStorage.remove(epicId);
+            }
         }
-        taskKeeper.deleteEpics(epicId);
     }
 
     public void updateTask(Task task) {
         if (isExistingTask(task)) {
-            taskKeeper.putTask(task);
+            taskStorage.put(task.getId(), task);
         }
     }
 
     public void updateSubTask(SubTask subTask) {
         if (isExistingSubTask(subTask) && isExistingParentEpic(subTask)) {
-            taskKeeper.putSubTask(subTask);
-            updateEpic(subTask.getEpicId());
+            subTaskStorage.put(subTask.getId(), subTask);
+            updateEpicStatus(subTask.getEpicId());
         }
     }
 
-    private void updateEpic(int epicId) {
-        Epic epic = getEpic(epicId);
+    public void updateEpic(Epic epic) {
+        Epic savedEpic = epicStorage.get(epic.getId());
+        if (savedEpic != null) {
+            savedEpic.setName(epic.getName());
+            savedEpic.setDescription(epic.getDescription());
+        }
+    }
+
+    public ArrayList<Integer> getSubtasksOfEpic(int epicId) {
+        ArrayList<Integer> result = new ArrayList<>();
+        Epic epic = epicStorage.get(epicId);
         if (epic != null) {
-            ArrayList<SubTask> subTasks = getSubtasksOfEpic(epicId);
-            int countOfSubTasks = subTasks.size();
-            if (subTasks.isEmpty()) {
-                epic.setStatus(TaskStatus.NEW);
-            } else {
-                int counterOfNewSubTasks = 0;
-                int counterOfDoneSubTasks = 0;
-                for (SubTask subTask : subTasks) {
+            result.addAll(epic.getSubTaskIds());
+        }
+        return result;
+    }
+
+    private void updateEpicStatus(int epicId) {
+        Epic epic = epicStorage.get(epicId);
+        if (epic != null) {
+            ArrayList<Integer> subTaskIds = epic.getSubTaskIds();
+            epic.setStatus(recalculateEpicStatus(subTaskIds));
+        }
+    }
+
+    private TaskStatus recalculateEpicStatus(ArrayList<Integer> subTaskIds) {
+        TaskStatus result;
+        int countOfSubTasks = subTaskIds.size();
+        if (subTaskIds.isEmpty()) {
+            result = TaskStatus.NEW;
+        } else {
+            int counterOfNewSubTasks = 0;
+            int counterOfDoneSubTasks = 0;
+            for (Integer subTaskId : subTaskIds) {
+                SubTask subTask = subTaskStorage.get(subTaskId);
+                if (subTask != null) {
                     TaskStatus status = subTask.getStatus();
                     if (status == TaskStatus.NEW) {
                         counterOfNewSubTasks++;
@@ -129,48 +173,29 @@ public class TaskManager {
                         counterOfDoneSubTasks++;
                     }
                 }
-                if (counterOfNewSubTasks == countOfSubTasks) {
-                    epic.setStatus(TaskStatus.NEW);
-                } else if (counterOfDoneSubTasks == countOfSubTasks) {
-                    epic.setStatus(TaskStatus.DONE);
-                } else {
-                    epic.setStatus(TaskStatus.IN_PROGRESS);
-                }
             }
-        }
-    }
-
-    public ArrayList<SubTask> getSubtasksOfEpic(int epicId) {
-        HashMap<Integer, SubTask> subTasks = taskKeeper.getSubTaskStorage();
-        ArrayList<SubTask> result = new ArrayList<>();
-        for (SubTask subTask : subTasks.values()) {
-            if (subTask.getEpicId() == epicId) {
-                result.add(subTask);
+            if (counterOfNewSubTasks == countOfSubTasks) {
+                result = TaskStatus.NEW;
+            } else if (counterOfDoneSubTasks == countOfSubTasks) {
+                result = TaskStatus.DONE;
+            } else {
+                result = TaskStatus.IN_PROGRESS;
             }
         }
         return result;
     }
 
     private boolean isExistingTask(Task task) {
-        return getTask(task.getId()) != null;
+        return taskStorage.get(task.getId()) != null;
     }
 
     private boolean isExistingSubTask(SubTask subTask) {
-        return (getSubTask(subTask.getId()) != null);
-    }
-
-    private boolean isExistingEpic(Epic epic) {
-        return getEpic(epic.getId()) != null;
+        return subTaskStorage.get(subTask.getId()) != null;
     }
 
     private boolean isExistingParentEpic(SubTask subTask) {
-        return getEpic(subTask.getEpicId()) != null;
+        return epicStorage.get(subTask.getEpicId()) != null;
     }
 
-    @Override
-    public String toString() {
-        return "TaskManager{" +
-                "taskKeeper=" + taskKeeper +
-                '}';
-    }
 }
+
