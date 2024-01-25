@@ -2,13 +2,14 @@ import model.Epic;
 import model.SubTask;
 import model.Task;
 import model.TaskStatus;
+import service.Managers;
 import service.TaskManager;
 
 public class Main {
 
     public static void main(String[] args) {
         System.out.println("Поехали!");
-        TaskManager taskManager = new TaskManager();
+        TaskManager taskManager = Managers.getDefault();
         System.out.println("Тестирование сохранения данных");
         //Создание двух новых тасок
         Task task = new Task("1stTask", "1stTask", 1);
