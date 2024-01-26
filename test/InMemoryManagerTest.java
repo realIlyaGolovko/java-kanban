@@ -15,9 +15,10 @@ import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class InMemoryManagerTest {
-    private static final Random random = new Random();
+
     //sut -> system under test
     private TaskManager sut;
+    private static final Random random = new Random();
 
     private Task initRandomTask() {
         return new Task("taskName" + random.nextInt(), "taskDescription" + random.nextInt(),
@@ -90,6 +91,10 @@ public class InMemoryManagerTest {
         }
     }
 
+    private void markAsWatched(Task task) {
+        sut.getTask(task.getId());
+    }
+
     private <T extends Task> boolean compareTasks(List<T> expected, List<T> actual) {
         if (expected.size() != actual.size()) {
             return false;
@@ -117,6 +122,13 @@ public class InMemoryManagerTest {
         Task actual = sut.getTask(savedTask);
 
         assertEquals(expected, actual, "Should be the same task");
+    }
+
+    @Test
+    public void createTaskWithNullShouldReturnErrorCode() {
+        int actual = sut.createTask(null);
+
+        assertEquals(-1, actual);
     }
 
     @Test
@@ -186,6 +198,13 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    public void createEpicWithNullShouldReturnErrorCode() {
+        int actual = sut.createEpic(null);
+
+        assertEquals(-1, actual);
+    }
+
+    @Test
     public void epicStatusShouldBeNewWhenAllSubTasksAreNew() {
         Epic epic = getRandomEpic();
         List<SubTask> savedSubtasks = getRandomSubTasksByEpic(epic.getId(), 2);
@@ -240,9 +259,7 @@ public class InMemoryManagerTest {
 
     @Test
     public void getInvalidEpicShouldReturnNull() {
-        int epicId = random.nextInt();
-
-        Epic actual = sut.getEpic(epicId);
+        Epic actual = sut.getEpic(random.nextInt());
 
         assertNull(actual, "Should not be found");
     }
@@ -314,6 +331,13 @@ public class InMemoryManagerTest {
         SubTask actual = sut.getSubTask(savedSubTask);
 
         assertNull(actual, "Should not be saved");
+    }
+
+    @Test
+    public void createSubTaskWithNullShouldReturnErrorCode() {
+        int actual = sut.createSubTask(null);
+
+        assertEquals(-1, actual);
     }
 
     @Test
@@ -420,54 +444,65 @@ public class InMemoryManagerTest {
 
     @Test
     public void historyCanContainTasksWithSameId() {
-        List<Task> expect = getRandomTasks();
+        Task expect = getRandomTask();
+        markAsWatched(expect);
         markAsWatched(expect);
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expect, actual), "Should be the same list");
+        assertEquals(actual.getFirst(), actual.getLast(), "Should be the same task");
     }
 
     @Test
     public void historyShouldContainDeletedTasks() {
-        Task expect = getRandomTask();
-        sut.getTask(expect.getId());
-        sut.deleteTask(expect.getId());
+        Task expected = getRandomTask();
+        markAsWatched(expected);
+        sut.deleteTask(expected.getId());
 
         Task actual = sut.getHistory().getFirst();
 
-        assertEquals(expect, actual, "Should be the same task");
+        assertEquals(expected, actual, "Should be the same task");
+    }
+
+    @Test
+    public void historyShouldNotContainNull() {
+        sut.getTask(random.nextInt());
+
+        List<Task> actual = sut.getHistory();
+
+        assertTrue(actual.isEmpty());
     }
 
     @Test
     public void historyIsNotClearedWhenSizeLessMaxByOne() {
-        List<Task> expect = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE - 1);
-        markAsWatched(expect);
+        List<Task> expected = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE - 1);
+        markAsWatched(expected);
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expect, actual), "Should be the same list");
+        assertTrue(compareTasks(expected, actual), "Should be the same list");
 
     }
 
     @Test
     public void historyIsNotClearedWhenSizeEqualsMax() {
-        List<Task> expect = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE);
-        markAsWatched(expect);
+        List<Task> expected = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE);
+        markAsWatched(expected);
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expect, actual), "Should be the same list");
+        assertTrue(compareTasks(expected, actual), "Should be the same list");
     }
 
     @Test
     public void historyIsClearedWhenSizeLargerMaxByOne() {
         List<Task> tasks = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE + 1);
         markAsWatched(tasks);
-        List<Task> expect = tasks.subList(1, tasks.size());
+        List<Task> expected = tasks.subList(1, tasks.size());
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expect, actual), "Should be the same list");
+        assertTrue(compareTasks(expected, actual), "Should be the same list");
     }
+
 }
