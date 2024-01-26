@@ -25,6 +25,9 @@ public class InMemoryManager implements TaskManager {
     //Tas
     @Override
     public int createTask(Task task) {
+        if (task == null) {
+            return -1;
+        }
         int newTaskId = getNextId();
         task.setId(newTaskId);
         task.setStatus(TaskStatus.NEW);
@@ -34,6 +37,9 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public void updateTask(Task task) {
+        if (task == null) {
+            return;
+        }
         int taskId = task.getId();
         if (taskStorage.containsKey(taskId)) {
             taskStorage.put(taskId, task);
@@ -65,22 +71,27 @@ public class InMemoryManager implements TaskManager {
     //Subtask
     @Override
     public int createSubTask(SubTask subTask) {
+        if (subTask == null) {
+            return -1;
+        }
         Epic epic = epicStorage.get(subTask.getEpicId());
         if (epic == null) {
             return -1;
-        } else {
-            int newSubtaskId = getNextId();
-            subTask.setId(newSubtaskId);
-            subTask.setStatus(TaskStatus.NEW);
-            epic.addSubTaskId(newSubtaskId);
-            updateEpicStatus(epic.getId());
-            subTaskStorage.put(newSubtaskId, subTask);
-            return newSubtaskId;
         }
+        int newSubtaskId = getNextId();
+        subTask.setId(newSubtaskId);
+        subTask.setStatus(TaskStatus.NEW);
+        epic.addSubTaskId(newSubtaskId);
+        updateEpicStatus(epic.getId());
+        subTaskStorage.put(newSubtaskId, subTask);
+        return newSubtaskId;
     }
 
     @Override
     public void updateSubTask(SubTask subTask) {
+        if (subTask == null) {
+            return;
+        }
         int subTaskId = subTask.getId();
         int epicId = subTask.getEpicId();
         if (subTaskStorage.containsKey(subTaskId) && epicStorage.containsKey(epicId)) {
@@ -141,6 +152,9 @@ public class InMemoryManager implements TaskManager {
     //Epic
     @Override
     public int createEpic(Epic epic) {
+        if (epic == null) {
+            return -1;
+        }
         int newEpicId = getNextId();
         epic.setId(newEpicId);
         epic.setStatus(TaskStatus.NEW);
@@ -180,11 +194,15 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public void updateEpic(Epic epic) {
-        Epic savedEpic = epicStorage.get(epic.getId());
-        if (savedEpic != null) {
-            savedEpic.setName(epic.getName());
-            savedEpic.setDescription(epic.getDescription());
+        if (epic == null) {
+            return;
         }
+        Epic savedEpic = epicStorage.get(epic.getId());
+        if (savedEpic == null) {
+            return;
+        }
+        savedEpic.setName(epic.getName());
+        savedEpic.setDescription(epic.getDescription());
     }
 
 
