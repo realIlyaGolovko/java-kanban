@@ -8,13 +8,22 @@ import model.TaskStatus;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class InMemoryManager implements TaskManager {
-    private final HashMap<Integer, Epic> epicStorage = new HashMap<>();
-    private final HashMap<Integer, SubTask> subTaskStorage = new HashMap<>();
-    private final HashMap<Integer, Task> taskStorage = new HashMap<>();
+    private final Map<Integer, Epic> epicStorage;
+    private final Map<Integer, SubTask> subTaskStorage;
+    private final Map<Integer, Task> taskStorage;
     private int id;
-    private final HistoryManager historyManager = Managers.getDefaultHistory();
+    private final HistoryManager historyManager;
+
+    public InMemoryManager(HistoryManager historyManager) {
+        this.historyManager = historyManager;
+        this.epicStorage = new HashMap<>();
+        this.subTaskStorage = new HashMap<>();
+        this.taskStorage = new HashMap<>();
+        this.id = 0;
+    }
 
     @Override
     public int getNextId() {
@@ -22,14 +31,13 @@ public class InMemoryManager implements TaskManager {
         return id;
     }
 
-    //Tas
+    //Task
     @Override
     public int createTask(Task task) {
         if (task == null) {
             return -1;
         }
         int newTaskId = getNextId();
-        task.setId(newTaskId);
         task.setStatus(TaskStatus.NEW);
         taskStorage.put(newTaskId, task);
         return newTaskId;
@@ -74,7 +82,8 @@ public class InMemoryManager implements TaskManager {
         if (subTask == null) {
             return -1;
         }
-        Epic epic = epicStorage.get(subTask.getEpicId());
+        int epicId = subTask.getEpicId();
+        Epic epic = epicStorage.get(epicId);
         if (epic == null) {
             return -1;
         }
@@ -82,7 +91,7 @@ public class InMemoryManager implements TaskManager {
         subTask.setId(newSubtaskId);
         subTask.setStatus(TaskStatus.NEW);
         epic.addSubTaskId(newSubtaskId);
-        updateEpicStatus(epic.getId());
+        updateEpicStatus(epicId);
         subTaskStorage.put(newSubtaskId, subTask);
         return newSubtaskId;
     }

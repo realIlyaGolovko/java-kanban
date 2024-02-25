@@ -14,6 +14,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+
 public class InMemoryManagerTest {
 
     //sut -> system under test
@@ -25,10 +26,12 @@ public class InMemoryManagerTest {
                 random.nextInt());
     }
 
-    private Task getRandomTask() {
-        Task task = initRandomTask();
-        sut.createTask(task);
-        return task;
+    private static void compareTasks(Task expected, Task actual) {
+        assertEquals(expected.getId(), actual.getId(), "Should be the same Ids");
+        assertEquals(expected.getName(), actual.getName(), "Should be the same names");
+        assertEquals(expected.getDescription(), actual.getDescription(), "Should be the same descriptions");
+        assertEquals(expected.getStatus(), actual.getStatus(), "Should be the same statuses");
+        assertEquals(expected.getTaskType(), actual.getTaskType(), "Should be the same types");
     }
 
     private List<Task> getRandomTasks() {
@@ -52,10 +55,9 @@ public class InMemoryManagerTest {
                 random.nextInt());
     }
 
-    private Epic getRandomEpic() {
-        Epic epic = initRandomEpic();
-        sut.createEpic(epic);
-        return epic;
+    private static void compareEpics(Epic expected, Epic actual) {
+        compareTasks(expected, actual);
+        assertEquals(expected.getSubTaskIds(), actual.getSubTaskIds(), "Should be the same subTaskIds");
     }
 
     private List<Epic> getRandomEpics() {
@@ -71,10 +73,9 @@ public class InMemoryManagerTest {
                 random.nextInt(), epicId);
     }
 
-    private SubTask getRandomSubTask(int epicId) {
-        SubTask subTask = initRandomSubTask(epicId);
-        sut.createSubTask(subTask);
-        return subTask;
+    private static void compareSubTasks(SubTask expected, SubTask actual) {
+        compareTasks(expected, actual);
+        assertEquals(expected.getEpicId(), actual.getEpicId(), "Should be the same epicIds");
     }
 
     private List<SubTask> getRandomSubTasksByEpic(int epicId, int countOfSubTasks) {
@@ -95,7 +96,7 @@ public class InMemoryManagerTest {
         sut.getTask(task.getId());
     }
 
-    private <T extends Task> boolean compareTasks(List<T> expected, List<T> actual) {
+    private static <T extends Task> boolean compareListOfTasks(List<T> expected, List<T> actual) {
         if (expected.size() != actual.size()) {
             return false;
         } else {
@@ -108,11 +109,28 @@ public class InMemoryManagerTest {
         }
     }
 
+    private Task getRandomTask() {
+        Task task = initRandomTask();
+        task.setId(sut.createTask(task));
+        return task;
+    }
+
+    private Epic getRandomEpic() {
+        Epic epic = initRandomEpic();
+        epic.setId(sut.createEpic(epic));
+        return epic;
+    }
+
+    private SubTask getRandomSubTask(int epicId) {
+        SubTask subTask = initRandomSubTask(epicId);
+        subTask.setId(sut.createSubTask(subTask));
+        return subTask;
+    }
+
     @BeforeEach
     public void setUp() {
         sut = Managers.getDefault();
     }
-
 
     @Test
     public void createTaskShouldSaveNewTask() {
@@ -121,7 +139,8 @@ public class InMemoryManagerTest {
         int savedTask = sut.createTask(expected);
         Task actual = sut.getTask(savedTask);
 
-        assertEquals(expected, actual, "Should be the same task");
+        compareTasks(expected, actual);
+        assertEquals(expected.getStatus(), TaskStatus.NEW, "Should be the NEW status");
     }
 
     @Test
@@ -134,13 +153,12 @@ public class InMemoryManagerTest {
     @Test
     public void updateTaskShouldUpdateSavedTask() {
         Task saved = getRandomTask();
-        Task expected = new Task("newTaskName", "newTaskDescription", saved.getId());
-        expected.setStatus(TaskStatus.DONE);
+        Task expected = new Task("newTaskName", "newTaskDescription", saved.getId(), TaskStatus.DONE);
 
         sut.updateTask(expected);
         Task actual = sut.getTask(saved.getId());
 
-        assertEquals(expected, actual, "Should be the same task");
+        compareTasks(expected, actual);
     }
 
     @Test
@@ -173,7 +191,7 @@ public class InMemoryManagerTest {
 
         List<Task> actual = sut.getTasks();
 
-        assertTrue(compareTasks(expected, actual), "Should be same");
+        assertTrue(compareListOfTasks(expected, actual), "Should be same tasks");
     }
 
     @Test
@@ -193,7 +211,8 @@ public class InMemoryManagerTest {
         int savedEpic = sut.createEpic(expected);
         Epic actual = sut.getEpic(savedEpic);
 
-        assertEquals(expected, actual, "Should be the same epic");
+
+        compareEpics(expected, actual);
         assertEquals(TaskStatus.NEW, actual.getStatus(), "Should be new");
     }
 
@@ -254,7 +273,7 @@ public class InMemoryManagerTest {
         sut.updateEpic(expected);
         Epic actual = sut.getEpic(saved.getId());
 
-        assertEquals(expected, actual, "Should be the same epic");
+        compareEpics(expected, actual);
     }
 
     @Test
@@ -293,7 +312,7 @@ public class InMemoryManagerTest {
 
         List<Epic> actual = sut.getEpics();
 
-        assertTrue(compareTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
     }
 
     @Test
@@ -320,7 +339,7 @@ public class InMemoryManagerTest {
         int savedSubTask = sut.createSubTask(expected);
         SubTask actual = sut.getSubTask(savedSubTask);
 
-        assertEquals(expected, actual, "Should be the same subtask");
+        compareSubTasks(expected, actual);
     }
 
     @Test
@@ -350,7 +369,7 @@ public class InMemoryManagerTest {
         sut.updateSubTask(expected);
         SubTask actual = sut.getSubTask(saved.getId());
 
-        assertEquals(expected, actual, "Should be the same subtask");
+        compareSubTasks(expected, actual);
     }
 
     @Test
@@ -378,7 +397,7 @@ public class InMemoryManagerTest {
 
         List<SubTask> actual = sut.getSubTasks();
 
-        assertTrue(compareTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
     }
 
     @Test
@@ -408,7 +427,7 @@ public class InMemoryManagerTest {
 
         List<SubTask> actual = sut.getSubtasksOfEpic(epic.getId());
 
-        assertTrue(compareTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
     }
 
     @Test
@@ -426,7 +445,7 @@ public class InMemoryManagerTest {
 
         Task actual = sut.getHistory().getFirst();
 
-        assertEquals(expected, actual, "Should be the same task");
+        compareTasks(expected, actual);
     }
 
     @Test
@@ -450,7 +469,7 @@ public class InMemoryManagerTest {
 
         List<Task> actual = sut.getHistory();
 
-        assertEquals(actual.getFirst(), actual.getLast(), "Should be the same task");
+        compareTasks(actual.getFirst(), actual.getLast());
     }
 
     @Test
@@ -461,7 +480,7 @@ public class InMemoryManagerTest {
 
         Task actual = sut.getHistory().getFirst();
 
-        assertEquals(expected, actual, "Should be the same task");
+        compareTasks(expected, actual);
     }
 
     @Test
@@ -480,7 +499,7 @@ public class InMemoryManagerTest {
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
 
     }
 
@@ -491,7 +510,7 @@ public class InMemoryManagerTest {
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
     }
 
     @Test
@@ -502,7 +521,7 @@ public class InMemoryManagerTest {
 
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
     }
 
 }
