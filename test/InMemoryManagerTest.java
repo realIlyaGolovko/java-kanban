@@ -3,8 +3,8 @@ import model.SubTask;
 import model.Task;
 import model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import service.InMemoryHistoryManager;
 import service.Managers;
 import service.TaskManager;
 
@@ -12,9 +12,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
+@DisplayName("Тесты менеджера задач в памяти.")
 public class InMemoryManagerTest {
 
     //sut -> system under test
@@ -26,12 +29,10 @@ public class InMemoryManagerTest {
                 random.nextInt());
     }
 
-    private static void compareTasks(Task expected, Task actual) {
-        assertEquals(expected.getId(), actual.getId(), "Should be the same Ids");
-        assertEquals(expected.getName(), actual.getName(), "Should be the same names");
-        assertEquals(expected.getDescription(), actual.getDescription(), "Should be the same descriptions");
-        assertEquals(expected.getStatus(), actual.getStatus(), "Should be the same statuses");
-        assertEquals(expected.getTaskType(), actual.getTaskType(), "Should be the same types");
+    private Task getRandomTask() {
+        Task task = initRandomTask();
+        task.setId(sut.createTask(task));
+        return task;
     }
 
     private List<Task> getRandomTasks() {
@@ -42,22 +43,15 @@ public class InMemoryManagerTest {
         return tasks;
     }
 
-    private List<Task> getRandomTasks(int countOfTasks) {
-        List<Task> tasks = new ArrayList<>(countOfTasks);
-        for (int i = 0; i < countOfTasks; i++) {
-            tasks.add(getRandomTask());
-        }
-        return tasks;
-    }
-
     private Epic initRandomEpic() {
         return new Epic("epicName" + random.nextInt(), "epicDescription" + random.nextInt(),
                 random.nextInt());
     }
 
-    private static void compareEpics(Epic expected, Epic actual) {
-        compareTasks(expected, actual);
-        assertEquals(expected.getSubTaskIds(), actual.getSubTaskIds(), "Should be the same subTaskIds");
+    private Epic getRandomEpic() {
+        Epic epic = initRandomEpic();
+        epic.setId(sut.createEpic(epic));
+        return epic;
     }
 
     private List<Epic> getRandomEpics() {
@@ -73,9 +67,10 @@ public class InMemoryManagerTest {
                 random.nextInt(), epicId);
     }
 
-    private static void compareSubTasks(SubTask expected, SubTask actual) {
-        compareTasks(expected, actual);
-        assertEquals(expected.getEpicId(), actual.getEpicId(), "Should be the same epicIds");
+    private SubTask getRandomSubTask(int epicId) {
+        SubTask subTask = initRandomSubTask(epicId);
+        subTask.setId(sut.createSubTask(subTask));
+        return subTask;
     }
 
     private List<SubTask> getRandomSubTasksByEpic(int epicId, int countOfSubTasks) {
@@ -86,14 +81,46 @@ public class InMemoryManagerTest {
         return subTasks;
     }
 
-    private void markAsWatched(List<Task> tasks) {
+    private void markSubTasksAsWatched(List<SubTask> subTasks) {
+        for (SubTask subTask : subTasks) {
+            sut.getSubTask(subTask.getId());
+        }
+    }
+
+    private void markTasksAsWatched(List<Task> tasks) {
         for (Task task : tasks) {
             sut.getTask(task.getId());
         }
     }
 
-    private void markAsWatched(Task task) {
+    private void markTaskAsWatched(Task task) {
         sut.getTask(task.getId());
+    }
+
+    private void markSubTaskAsWatched(SubTask subTask) {
+        sut.getSubTask(subTask.getId());
+    }
+
+    private void markEpicAsWatched(Epic epic) {
+        sut.getEpic(epic.getId());
+    }
+
+    private static void compareTasks(Task expected, Task actual) {
+        assertEquals(expected.getId(), actual.getId(), "Should be the same Ids");
+        assertEquals(expected.getName(), actual.getName(), "Should be the same names");
+        assertEquals(expected.getDescription(), actual.getDescription(), "Should be the same descriptions");
+        assertEquals(expected.getStatus(), actual.getStatus(), "Should be the same statuses");
+        assertEquals(expected.getTaskType(), actual.getTaskType(), "Should be the same types");
+    }
+
+    private static void compareEpics(Epic expected, Epic actual) {
+        compareTasks(expected, actual);
+        assertEquals(expected.getSubTaskIds(), actual.getSubTaskIds(), "Should be the same subTaskIds");
+    }
+
+    private static void compareSubTasks(SubTask expected, SubTask actual) {
+        compareTasks(expected, actual);
+        assertEquals(expected.getEpicId(), actual.getEpicId(), "Should be the same epicIds");
     }
 
     private static <T extends Task> boolean compareListOfTasks(List<T> expected, List<T> actual) {
@@ -109,30 +136,13 @@ public class InMemoryManagerTest {
         }
     }
 
-    private Task getRandomTask() {
-        Task task = initRandomTask();
-        task.setId(sut.createTask(task));
-        return task;
-    }
-
-    private Epic getRandomEpic() {
-        Epic epic = initRandomEpic();
-        epic.setId(sut.createEpic(epic));
-        return epic;
-    }
-
-    private SubTask getRandomSubTask(int epicId) {
-        SubTask subTask = initRandomSubTask(epicId);
-        subTask.setId(sut.createSubTask(subTask));
-        return subTask;
-    }
-
     @BeforeEach
     public void setUp() {
         sut = Managers.getDefault();
     }
 
     @Test
+    @DisplayName("При создании задачи, она должна сохраняться в памяти в статусе NEW.")
     public void createTaskShouldSaveNewTask() {
         Task expected = initRandomTask();
 
@@ -144,6 +154,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При создании задачи, если задача с таким именем уже существует, то должен возвращаться код ошибки.")
     public void createTaskWithNullShouldReturnErrorCode() {
         int actual = sut.createTask(null);
 
@@ -151,6 +162,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("У таски можно изменить наименование, описание и статус.")
     public void updateTaskShouldUpdateSavedTask() {
         Task saved = getRandomTask();
         Task expected = new Task("newTaskName", "newTaskDescription", saved.getId(), TaskStatus.DONE);
@@ -162,6 +174,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Если задачи не существует, должен возвращаться null")
     public void getInvalidTaskShouldReturnNull() {
         Task actual = sut.getTask(random.nextInt());
 
@@ -169,6 +182,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При удалении задачи, она должна удаляться из памяти.")
     public void deleteTaskShouldDeleteSavedTask() {
         Task saved = getRandomTask();
 
@@ -179,12 +193,14 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Если созданных задач в памяти нет, то должен возвращать пустой список.")
     public void getAllTasksReturnEmptyListWhenNoTasks() {
         List<Task> result = sut.getTasks();
         assertTrue(result.isEmpty(), "Should be empty");
     }
 
     @Test
+    @DisplayName("Должен возвращать только сохраненные таски.")
     public void getAllTasksReturnOnlyAllSavedTasks() {
         List<Task> expected = getRandomTasks();
         getRandomEpics();
@@ -195,6 +211,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен удаллять все сохраненные таски.")
     public void deleteAllTasksShouldDeleteAllSavedTasks() {
         getRandomTasks();
 
@@ -205,6 +222,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен сохранять эпик в памяти в статусе NEW.")
     public void createEpicShouldSaveNewEpic() {
         Epic expected = initRandomEpic();
 
@@ -217,6 +235,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При попытке сохранить пустой эпик, должен возвращать код ошибки.")
     public void createEpicWithNullShouldReturnErrorCode() {
         int actual = sut.createEpic(null);
 
@@ -224,6 +243,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Эпик должен быть в статусе NEW, если все его подзадачи в статусе NEW.")
     public void epicStatusShouldBeNewWhenAllSubTasksAreNew() {
         Epic epic = getRandomEpic();
         List<SubTask> savedSubtasks = getRandomSubTasksByEpic(epic.getId(), 2);
@@ -239,6 +259,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Эпик должен быть в статусе IN_PROGRESS, если все его подзадачи в разных статусах.")
     public void epicStatusShouldBeInProgressWhenAnySubTaskIsInProgress() {
         Epic epic = getRandomEpic();
         List<SubTask> savedSubtasks = getRandomSubTasksByEpic(epic.getId(), 2);
@@ -252,6 +273,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Эпик должен быть в статусе DONE, если все его подзадачи завершены.")
     public void epicStatusShouldBeDoneWhenAllSubTasksAreDone() {
         Epic epic = getRandomEpic();
         List<SubTask> savedSubtasks = getRandomSubTasksByEpic(epic.getId(), 3);
@@ -266,6 +288,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен обновлять наименование и описание  сохраненного эпика в памяти.")
     public void updateEpicShouldUpdateSavedEpic() {
         Epic saved = getRandomEpic();
         Epic expected = new Epic("newEpicName", "newEpicDescription", saved.getId());
@@ -277,6 +300,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Если эпика не существует, должен возвращаться null")
     public void getInvalidEpicShouldReturnNull() {
         Epic actual = sut.getEpic(random.nextInt());
 
@@ -284,6 +308,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При удалении эпика, он должен удаляться из памяти.")
     public void deleteEpicWithoutSubTasksShouldDeleteSavedEpic() {
         Epic saved = getRandomEpic();
 
@@ -294,6 +319,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При удалении эпика, все его дочерние подзадачи должны удаляться из памяти.")
     public void deleteEpicWithSubTasksShouldDeleteSavedEpicAndSubTasks() {
         Epic epic = getRandomEpic();
         getRandomSubTasksByEpic(epic.getId(), 3);
@@ -307,6 +333,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен возвращать только сохраненные эпики.")
     public void getAllEpicsReturnOnlyAllSavedEpics() {
         List<Epic> expected = getRandomEpics();
 
@@ -316,6 +343,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При удалении всех эпиков, все сабтаски должны быть удалены.")
     public void deleteAllEpicsShouldDeleteAllSavedEpicsAnsSubTasks() {
         List<Epic> epics = getRandomEpics();
         for (Epic epic : epics) {
@@ -331,6 +359,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен сохранять новую подзадачу в памяти.")
     public void createSubtaskShouldSaveNewSubtaskWithParent() {
         Epic epic = initRandomEpic();
         int createdEpic = sut.createEpic(epic);
@@ -343,6 +372,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Сабтаска не должны сохраняться в памяти, при попытке сохранить подзадачу с несуществующим эпиком.")
     public void createSubTaskWithInvalidEpicShouldNotSave() {
         SubTask expected = initRandomSubTask(random.nextInt());
 
@@ -353,6 +383,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен возвращать код ошибки, при попытке сохранить подзадачу с null.")
     public void createSubTaskWithNullShouldReturnErrorCode() {
         int actual = sut.createSubTask(null);
 
@@ -360,11 +391,14 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен обновлять наименование, описание, статус.")
     public void updateSubTaskShouldUpdateSavedSubTask() {
         Epic epic = getRandomEpic();
         SubTask saved = getRandomSubTask(epic.getId());
         SubTask expected = new SubTask("newSubTaskName", "newSubTaskDescription", saved.getId(),
                 epic.getId());
+        expected.setStatus(TaskStatus.DONE);
+        sut.updateSubTask(saved);
 
         sut.updateSubTask(expected);
         SubTask actual = sut.getSubTask(saved.getId());
@@ -373,6 +407,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("При удалении подзадачи, она должна удаляться из памяти.")
     public void deleteSubTaskShouldDeleteSavedSubTask() {
         Epic epic = getRandomEpic();
         SubTask saved = getRandomSubTask(epic.getId());
@@ -384,6 +419,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Если подзадач не существует, должен возвращаться null.")
     public void getSubTasksShouldReturnEmptyListWhenNoSubTasks() {
         List<SubTask> actual = sut.getSubTasks();
 
@@ -391,6 +427,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен возвращать только сохраненные подзадачи.")
     public void getSubTasksShouldReturnOnlyAllSavedSubTasks() {
         Epic epic = getRandomEpic();
         List<SubTask> expected = getRandomSubTasksByEpic(epic.getId(), 2);
@@ -401,6 +438,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен удалять все сохраненные подзадачи.")
     public void deleteSubTasksShouldDeleteAllSavedSubTasks() {
         Epic epic = getRandomEpic();
         getRandomSubTasksByEpic(epic.getId(), 2);
@@ -412,6 +450,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен возвращать пустой список, если у эпика нет дочерних подзадач.")
     public void getSubTasksOfEpicShouldReturnEmptyListWhenNoSubTasks() {
         Epic epic = getRandomEpic();
 
@@ -421,6 +460,7 @@ public class InMemoryManagerTest {
     }
 
     @Test
+    @DisplayName("Должен возвращать дочерние подзадачи эпика.")
     public void getSubTasksOfEpicShouldReturnOnlyChildSubTasks() {
         Epic epic = getRandomEpic();
         List<SubTask> expected = getRandomSubTasksByEpic(epic.getId(), 2);
@@ -431,59 +471,152 @@ public class InMemoryManagerTest {
     }
 
     @Test
-    public void getHistoryShouldReturnEmptyListWhenNoHistory() {
+    @DisplayName("Если задачи не просматривались, история должна быть пустой.")
+    public void getHistoryShouldReturnEmptyListWhenHistoryIsClear() {
         List<Task> actual = sut.getHistory();
 
         assertTrue(actual.isEmpty(), "Should be empty");
     }
 
     @Test
+    @DisplayName("В истории должны быть сохранены только просмотренные таски.")
     public void getHistoryShouldReturnOnlyWatchedTasks() {
         getRandomTask();
         Task expected = getRandomTask();
-        sut.getTask(expected.getId());
 
-        Task actual = sut.getHistory().getFirst();
+        markTaskAsWatched(expected);
+        List<Task> actual = sut.getHistory();
 
-        compareTasks(expected, actual);
+        compareTasks(expected, actual.getFirst());
+        assertEquals(1, actual.size(), "Should be only one");
+
     }
 
     @Test
-    public void historyCanWorkWithMultipleTasks() {
-        Task task = getRandomTask();
-        sut.getTask(task.getId());
-        Epic epic = getRandomEpic();
-        sut.getEpic(epic.getId());
-        SubTask subTask = getRandomSubTask(epic.getId());
-        sut.getSubTask(subTask.getId());
+    @DisplayName("В истории могут содержаться разные типы задач.")
+    public void historyCanWorkWithDifferentTypesOfTasks() {
+        Task expectedTask = getRandomTask();
+        markTaskAsWatched(expectedTask);
+        Epic expectedEpic = getRandomEpic();
+        markEpicAsWatched(expectedEpic);
+        SubTask expecteSubTask = getRandomSubTask(expectedEpic.getId());
+        markSubTaskAsWatched(expecteSubTask);
 
         List<Task> actual = sut.getHistory();
+
         assertEquals(3, actual.size(), "Should be 3");
+        assertEquals(expectedTask, actual.getFirst(), "Should be the same task");
+        assertEquals(expectedEpic.getId(), actual.get(1).getId(), "Should be the same epic");
+        assertEquals(expecteSubTask.getId(), actual.getLast().getId(), "Should be the same subtask");
     }
 
     @Test
-    public void historyCanContainTasksWithSameId() {
-        Task expect = getRandomTask();
-        markAsWatched(expect);
-        markAsWatched(expect);
+    @DisplayName("Единственная задача просмотренная дважды, должна быть в истории один раз.")
+    public void aSingleTaskViewedTwiceShouldAppearInTheHistoryOnce() {
+        Task expected = getRandomTask();
+        markTaskAsWatched(expected);
+        markTaskAsWatched(expected);
 
         List<Task> actual = sut.getHistory();
 
-        compareTasks(actual.getFirst(), actual.getLast());
+        compareTasks(expected, actual.getFirst());
+        assertEquals(1, actual.size(), "Should be only one");
     }
 
     @Test
-    public void historyShouldContainDeletedTasks() {
+    @DisplayName("Когда просмотренная задача уже была в начале истории, дубликаты не создаются.")
+    public void whenTheViewedTaskIsAtTheBeginningOfTheHistoryThereAreNoDuplicatesThere() {
         Task expected = getRandomTask();
-        markAsWatched(expected);
+        markTaskAsWatched(expected);
+        Task anotherTask = getRandomTask();
+        markTaskAsWatched(anotherTask);
+        markTaskAsWatched(expected);
+
+        List<Task> actual = sut.getHistory();
+
+        compareTasks(anotherTask, actual.getFirst());
+        compareTasks(expected, actual.getLast());
+        assertEquals(2, actual.size(), "Should be only one");
+    }
+
+    @Test
+    @DisplayName("Когда просмотренная задача уже была в конце истории, дубликаты не создаются.")
+    public void whenTheViewedTaskIsAtTheEndingOfTheHistoryThereAreNoDuplicatesThere() {
+        Task anotherTask = getRandomTask();
+        markTaskAsWatched(anotherTask);
+        Task expected = getRandomTask();
+        markTaskAsWatched(expected);
+        markTaskAsWatched(expected);
+
+        List<Task> actual = sut.getHistory();
+
+        compareTasks(anotherTask, actual.getFirst());
+        compareTasks(expected, actual.getLast());
+        assertEquals(2, actual.size(), "Should be only one");
+    }
+
+    @Test
+    @DisplayName("Когда просмотренная задача уже была в середине истории, дубликаты не создаются.")
+    public void whenTheViewedTaskIsAtTheMiddleOfTheHistoryThereAreNoDuplicatesThere() {
+        Task firstTask = getRandomTask();
+        markTaskAsWatched(firstTask);
+        Task expected = getRandomTask();
+        markTaskAsWatched(expected);
+        Task anotherTask = getRandomTask();
+        markTaskAsWatched(anotherTask);
+
+
+        markTaskAsWatched(expected);
+        List<Task> actual = sut.getHistory();
+
+        compareTasks(firstTask, actual.getFirst());
+        compareTasks(anotherTask, actual.get(1));
+        compareTasks(expected, actual.getLast());
+        assertEquals(3, actual.size(), "Should be only one");
+    }
+
+
+    @Test
+    @DisplayName("В истории не должно быть удаленных задач.")
+    public void historyShouldNotContainDeletedTasks() {
+        Task expected = getRandomTask();
+        markTaskAsWatched(expected);
         sut.deleteTask(expected.getId());
 
-        Task actual = sut.getHistory().getFirst();
+        List<Task> actual = sut.getHistory();
 
-        compareTasks(expected, actual);
+        assertTrue(actual.isEmpty(), "Should be empty");
     }
 
     @Test
+    @DisplayName("В истории не должно быть удаленных задач.")
+    public void historyShouldNotContainDeletedSubTasks() {
+        int epicId = getRandomEpic().getId();
+        SubTask expected = getRandomSubTask(epicId);
+        markSubTaskAsWatched(expected);
+        sut.deleteTask(expected.getId());
+
+        List<Task> actual = sut.getHistory();
+
+        assertTrue(actual.isEmpty(), "Should be empty");
+    }
+
+    @Test
+    @DisplayName("В истории не должно быть удаленных эпиков с дочерними подзадачами.")
+    public void historyShouldNotContainDeletedEpicAndChildSubTasks() {
+        Epic expectedEpic = getRandomEpic();
+        markEpicAsWatched(expectedEpic);
+        List<SubTask> subTasks = getRandomSubTasksByEpic(expectedEpic.getId(), 3);
+        markSubTasksAsWatched(subTasks);
+
+        sut.deleteEpic(expectedEpic.getId());
+        List<Task> actual = sut.getHistory();
+
+        assertTrue(actual.isEmpty(), "Should be empty");
+    }
+
+    @Test
+    @DisplayName("В истории не должно быть null.")
     public void historyShouldNotContainNull() {
         sut.getTask(random.nextInt());
 
@@ -493,35 +626,55 @@ public class InMemoryManagerTest {
     }
 
     @Test
-    public void historyIsNotClearedWhenSizeLessMaxByOne() {
-        List<Task> expected = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE - 1);
-        markAsWatched(expected);
+    @DisplayName("Удаление всех задач из памяти, должно удалять задачи из истории.")
+    public void deleteTasksShouldClearAllTasksFromHistory() {
+        List<Task> tasksForClear = getRandomTasks();
+        markTasksAsWatched(tasksForClear);
+        Epic expectedEpic = getRandomEpic();
+        markEpicAsWatched(expectedEpic);
+        SubTask expectedSubTask = getRandomSubTask(expectedEpic.getId());
+        markSubTaskAsWatched(expectedSubTask);
 
+        sut.deleteTasks();
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
-
+        assertEquals(2, actual.size(), "Should contains only epic with subtask");
+        assertEquals(expectedEpic, actual.getFirst(), "Should be same epic");
+        assertEquals(expectedSubTask, actual.getLast(), "Should be same subtask");
     }
 
     @Test
-    public void historyIsNotClearedWhenSizeEqualsMax() {
-        List<Task> expected = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE);
-        markAsWatched(expected);
+    @DisplayName("Удаление всех подзадач из памяти, должно удалять подзадачи из истории.")
+    public void deleteSubTasksShouldClearAllSubTasksFromHistory() {
+        Epic expectedEpic = getRandomEpic();
+        markEpicAsWatched(expectedEpic);
+        Task expectedTask = getRandomTask();
+        markTaskAsWatched(expectedTask);
+        List<SubTask> subTasksForClear = getRandomSubTasksByEpic(expectedEpic.getId(), 2);
+        markSubTasksAsWatched(subTasksForClear);
 
+
+        sut.deleteSubTasks();
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
+        assertEquals(2, actual.size(), "Should contains only epic and task");
+        assertEquals(expectedEpic, actual.getFirst(), "Should be same epic");
+        assertEquals(expectedTask, actual.getLast(), "Should be same task");
     }
 
     @Test
-    public void historyIsClearedWhenSizeLargerMaxByOne() {
-        List<Task> tasks = getRandomTasks(InMemoryHistoryManager.MAX_HISTORY_SIZE + 1);
-        markAsWatched(tasks);
-        List<Task> expected = tasks.subList(1, tasks.size());
+    @DisplayName("Удаление всех эпиков из памяти, должно удалять эпики и подзадачи из истории.")
+    public void deleteEpicsShouldClearAllEpicsAndSubTasksFromHistory() {
+        Epic epicForClear = getRandomEpic();
+        markEpicAsWatched(epicForClear);
+        List<SubTask> subTasksForClear = getRandomSubTasksByEpic(epicForClear.getId(), 2);
+        markSubTasksAsWatched(subTasksForClear);
+        List<Task> expectedTasks = getRandomTasks();
+        markTasksAsWatched(expectedTasks);
 
+        sut.deleteEpics();
         List<Task> actual = sut.getHistory();
 
-        assertTrue(compareListOfTasks(expected, actual), "Should be the same list");
+        assertTrue(compareListOfTasks(expectedTasks, actual), "Should contains only tasks)");
     }
-
 }
