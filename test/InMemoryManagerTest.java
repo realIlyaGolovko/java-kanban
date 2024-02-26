@@ -87,6 +87,12 @@ public class InMemoryManagerTest {
         }
     }
 
+    private void markTasksAsWatched(List<Task> tasks) {
+        for (Task task : tasks) {
+            sut.getTask(task.getId());
+        }
+    }
+
     private void markTaskAsWatched(Task task) {
         sut.getTask(task.getId());
     }
@@ -617,5 +623,58 @@ public class InMemoryManagerTest {
         List<Task> actual = sut.getHistory();
 
         assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Удаление всех задач из памяти, должно удалять задачи из истории.")
+    public void deleteTasksShouldClearAllTasksFromHistory() {
+        List<Task> tasksForClear = getRandomTasks();
+        markTasksAsWatched(tasksForClear);
+        Epic expectedEpic = getRandomEpic();
+        markEpicAsWatched(expectedEpic);
+        SubTask expectedSubTask = getRandomSubTask(expectedEpic.getId());
+        markSubTaskAsWatched(expectedSubTask);
+
+        sut.deleteTasks();
+        List<Task> actual = sut.getHistory();
+
+        assertEquals(2, actual.size(), "Should contains only epic with subtask");
+        assertEquals(expectedEpic, actual.getFirst(), "Should be same epic");
+        assertEquals(expectedSubTask, actual.getLast(), "Should be same subtask");
+    }
+
+    @Test
+    @DisplayName("Удаление всех подзадач из памяти, должно удалять подзадачи из истории.")
+    public void deleteSubTasksShouldClearAllSubTasksFromHistory() {
+        Epic expectedEpic = getRandomEpic();
+        markEpicAsWatched(expectedEpic);
+        Task expectedTask = getRandomTask();
+        markTaskAsWatched(expectedTask);
+        List<SubTask> subTasksForClear = getRandomSubTasksByEpic(expectedEpic.getId(), 2);
+        markSubTasksAsWatched(subTasksForClear);
+
+
+        sut.deleteSubTasks();
+        List<Task> actual = sut.getHistory();
+
+        assertEquals(2, actual.size(), "Should contains only epic and task");
+        assertEquals(expectedEpic, actual.getFirst(), "Should be same epic");
+        assertEquals(expectedTask, actual.getLast(), "Should be same task");
+    }
+
+    @Test
+    @DisplayName("Удаление всех эпиков из памяти, должно удалять эпики и подзадачи из истории.")
+    public void deleteEpicsShouldClearAllEpicsAndSubTasksFromHistory() {
+        Epic epicForClear = getRandomEpic();
+        markEpicAsWatched(epicForClear);
+        List<SubTask> subTasksForClear = getRandomSubTasksByEpic(epicForClear.getId(), 2);
+        markSubTasksAsWatched(subTasksForClear);
+        List<Task> expectedTasks = getRandomTasks();
+        markTasksAsWatched(expectedTasks);
+
+        sut.deleteEpics();
+        List<Task> actual = sut.getHistory();
+
+        assertTrue(compareListOfTasks(expectedTasks, actual), "Should contains only tasks)");
     }
 }
