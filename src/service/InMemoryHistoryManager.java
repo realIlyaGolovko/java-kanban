@@ -11,8 +11,8 @@ import java.util.Map;
 public class InMemoryHistoryManager implements HistoryManager {
     private final Map<Integer, Node> history = new HashMap<>();
 
-    Node first;
-    Node last;
+    private Node first;
+    private Node last;
 
     @Override
     public void add(Task task) {
