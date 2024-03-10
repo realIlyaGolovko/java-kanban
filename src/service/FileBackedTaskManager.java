@@ -1,10 +1,6 @@
 package service;
 
-import converter.Converter;
-import converter.EpicConverter;
-import converter.HistoryConverter;
-import converter.SubTaskConverter;
-import converter.TaskConverter;
+import converter.*;
 import exception.ManagerLoadException;
 import exception.ManagerSaveException;
 import model.Epic;
@@ -12,19 +8,14 @@ import model.SubTask;
 import model.Task;
 import model.TaskType;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class FileBackedTaskManager extends InMemoryManager {
     private final File file;
     private final Map<TaskType, Converter> converters;
-    private final String FILE_HEADER = "id,type,name,status,description,epic" + System.lineSeparator();
+    private final static String FILE_HEADER = "id,type,name,status,description,epic" + System.lineSeparator();
 
     public FileBackedTaskManager(File file) {
         super(Managers.getDefaultHistory());
