@@ -15,7 +15,7 @@ import java.util.Map;
 public class FileBackedTaskManager extends InMemoryManager {
     private final File file;
     private final Map<TaskType, Converter> converters;
-    private final static String FILE_HEADER = "id,type,name,status,description,epic" + System.lineSeparator();
+    private static final String FILE_HEADER = "id,type,name,status,description,epic" + System.lineSeparator();
 
     public FileBackedTaskManager(File file) {
         super(Managers.getDefaultHistory());
