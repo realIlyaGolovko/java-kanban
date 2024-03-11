@@ -36,13 +36,9 @@ public class FileBackedTaskManager extends InMemoryManager {
         this.converters = Map.of(TASK, new TaskConverter(), TaskType.SUBTASK, new SubTaskConverter(), TaskType.EPIC, new EpicConverter());
     }
 
-    public void init() {
-        loadFromFile();
-    }
-
     public static FileBackedTaskManager loadFromFile(File file) {
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
-        manager.init();
+        manager.loadFromFile();
         return manager;
     }
 
