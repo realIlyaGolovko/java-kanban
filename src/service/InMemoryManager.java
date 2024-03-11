@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 public class InMemoryManager implements TaskManager {
-    private final Map<Integer, Epic> epicStorage;
-    private final Map<Integer, SubTask> subTaskStorage;
-    private final Map<Integer, Task> taskStorage;
-    private int id;
-    private final HistoryManager historyManager;
+    protected final Map<Integer, Epic> epicStorage;
+    protected final Map<Integer, SubTask> subTaskStorage;
+    protected final Map<Integer, Task> taskStorage;
+    protected int id;
+    protected final HistoryManager historyManager;
 
     public InMemoryManager(HistoryManager historyManager) {
         this.historyManager = historyManager;
@@ -234,6 +234,11 @@ public class InMemoryManager implements TaskManager {
         savedEpic.setDescription(epic.getDescription());
     }
 
+    //History
+    @Override
+    public List<Task> getHistory() {
+        return historyManager.getHistory();
+    }
 
     private void updateEpicStatus(int epicId) {
         Epic epic = epicStorage.get(epicId);
@@ -271,12 +276,6 @@ public class InMemoryManager implements TaskManager {
             }
         }
         return result;
-    }
-
-    //History
-    @Override
-    public List<Task> getHistory() {
-        return historyManager.getHistory();
     }
 }
 
