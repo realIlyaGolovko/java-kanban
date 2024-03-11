@@ -1,6 +1,10 @@
 package service;
 
-import converter.*;
+import converter.Converter;
+import converter.EpicConverter;
+import converter.HistoryConverter;
+import converter.SubTaskConverter;
+import converter.TaskConverter;
 import exception.ManagerLoadException;
 import exception.ManagerSaveException;
 import model.Epic;
@@ -8,9 +12,18 @@ import model.SubTask;
 import model.Task;
 import model.TaskType;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+
+import static model.TaskType.EPIC;
+import static model.TaskType.SUBTASK;
+import static model.TaskType.TASK;
 
 public class FileBackedTaskManager extends InMemoryManager {
     private final File file;
@@ -20,8 +33,7 @@ public class FileBackedTaskManager extends InMemoryManager {
     public FileBackedTaskManager(File file) {
         super(Managers.getDefaultHistory());
         this.file = file;
-        this.converters = Map.of(TaskType.TASK, new TaskConverter(),
-                TaskType.SUBTASK, new SubTaskConverter(), TaskType.EPIC, new EpicConverter());
+        this.converters = Map.of(TASK, new TaskConverter(), TaskType.SUBTASK, new SubTaskConverter(), TaskType.EPIC, new EpicConverter());
     }
 
     public void init() {
@@ -134,9 +146,19 @@ public class FileBackedTaskManager extends InMemoryManager {
     private void save() {
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
             writer.write(FILE_HEADER);
-            for (Task task : getAllTasks()) {
-                Converter converter = converters.get(task.getTaskType());
+            for (Task task : getTasks()) {
+                Converter converter = converters.get(TASK);
                 writer.write(converter.toString(task));
+                writer.newLine();
+            }
+            for (Epic epic : getEpics()) {
+                Converter converter = converters.get(EPIC);
+                writer.write(converter.toString(epic));
+                writer.newLine();
+            }
+            for (SubTask subTask : getSubTasks()) {
+                Converter converter = converters.get(SUBTASK);
+                writer.write(converter.toString(subTask));
                 writer.newLine();
             }
             writer.newLine();
@@ -179,7 +201,7 @@ public class FileBackedTaskManager extends InMemoryManager {
                 }
             }
             for (SubTask subTask : getSubTasks()) {
-                Epic epic = selectEpic(subTask.getEpicId());
+                Epic epic = epicStorage.get(subTask.getEpicId());
                 if (epic != null) {
                     epic.addSubTaskId(subTask.getId());
                 }
@@ -192,5 +214,27 @@ public class FileBackedTaskManager extends InMemoryManager {
             throw new ManagerLoadException("Error while loading tasks from file", exception);
         }
         setId(maxTaskId);
+    }
+
+    private void insertTask(Task task) {
+        taskStorage.put(task.getId(), task);
+    }
+
+    private void insertSubTask(SubTask task) {
+        subTaskStorage.put(task.getId(), task);
+    }
+
+    private void insertEpic(Epic task) {
+        epicStorage.put(task.getId(), task);
+    }
+
+    private void insertHistory(int taskId) {
+        if (taskStorage.containsKey(taskId)) {
+            historyManager.add(taskStorage.get(taskId));
+        } else if (subTaskStorage.containsKey(taskId)) {
+            historyManager.add(subTaskStorage.get(taskId));
+        } else if (epicStorage.containsKey(taskId)) {
+            historyManager.add(epicStorage.get(taskId));
+        }
     }
 }

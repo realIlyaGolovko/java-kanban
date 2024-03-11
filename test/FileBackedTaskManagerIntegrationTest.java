@@ -9,6 +9,7 @@ import service.FileBackedTaskManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,10 +35,14 @@ public class FileBackedTaskManagerIntegrationTest extends TaskManagerTest<FileBa
     @DisplayName("Создание задач должно сохранять их в файл.")
     public void createShouldSaveTaskToFile() {
         List<Task> expectedTasks = getListOfRandomDifferentTasks();
+        List<Task> actualTasks = new ArrayList<>();
 
-        List<Task> actual = FileBackedTaskManager.loadFromFile(file).getAllTasks();
+        FileBackedTaskManager actual = FileBackedTaskManager.loadFromFile(file);
+        actualTasks.addAll(actual.getTasks());
+        actualTasks.addAll(actual.getEpics());
+        actualTasks.addAll(actual.getSubTasks());
 
-        compareListOfTasks(expectedTasks, actual);
+        compareListOfTasks(expectedTasks, actualTasks);
     }
 
     @Test
@@ -48,10 +53,12 @@ public class FileBackedTaskManagerIntegrationTest extends TaskManagerTest<FileBa
         expectedSubTask.setStatus(TaskStatus.DONE);
         sut.updateSubTask(expectedSubTask);
 
-        List<Task> actual = FileBackedTaskManager.loadFromFile(file).getAllTasks();
+        FileBackedTaskManager actual = FileBackedTaskManager.loadFromFile(file);
+        TaskStatus actualEpicStatus = actual.getEpic(expectedEpic.getId()).getStatus();
+        TaskStatus actualSubTaskStatus = actual.getSubTask(expectedSubTask.getId()).getStatus();
 
-        assertEquals(TaskStatus.DONE, actual.getFirst().getStatus(), "Status of epic should be actual");
-        assertEquals(TaskStatus.DONE, actual.getLast().getStatus(), "Status of epic should be actual");
+        assertEquals(TaskStatus.DONE, actualEpicStatus, "Status of epic should be actual");
+        assertEquals(TaskStatus.DONE, actualSubTaskStatus, "Status of epic should be actual");
     }
 
     @Test
@@ -62,7 +69,7 @@ public class FileBackedTaskManagerIntegrationTest extends TaskManagerTest<FileBa
         sut.deleteTask(taskForDelete.getId());
 
 
-        List<Task> actual = FileBackedTaskManager.loadFromFile(file).getAllTasks();
+        List<Task> actual = FileBackedTaskManager.loadFromFile(file).getTasks();
 
         compareTasks(expectedTask, actual.getFirst());
         assertEquals(1, actual.size(), "Should be one task in list");
@@ -75,11 +82,14 @@ public class FileBackedTaskManagerIntegrationTest extends TaskManagerTest<FileBa
         markTaskAsWatched(expectedTask);
         Epic expectedEpic = getRandomEpic();
         markEpicAsWatched(expectedEpic);
+        SubTask expectedSubTask = getRandomSubTask(expectedEpic.getId());
+        markSubTaskAsWatched(expectedSubTask);
 
         List<Task> actual = FileBackedTaskManager.loadFromFile(file).getHistory();
 
         compareTasks(expectedTask, actual.getFirst());
-        compareTasks(expectedEpic, actual.getLast());
+        compareTasks(expectedEpic, actual.get(1));
+        compareTasks(expectedSubTask, actual.getLast());
     }
 
     @Test

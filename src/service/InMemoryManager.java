@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 public class InMemoryManager implements TaskManager {
-    private final Map<Integer, Epic> epicStorage;
-    private final Map<Integer, SubTask> subTaskStorage;
-    private final Map<Integer, Task> taskStorage;
+    protected final Map<Integer, Epic> epicStorage;
+    protected final Map<Integer, SubTask> subTaskStorage;
+    protected final Map<Integer, Task> taskStorage;
     private int id;
-    private final HistoryManager historyManager;
+    protected final HistoryManager historyManager;
 
     public InMemoryManager(HistoryManager historyManager) {
         this.historyManager = historyManager;
@@ -238,54 +238,10 @@ public class InMemoryManager implements TaskManager {
         savedEpic.setDescription(epic.getDescription());
     }
 
-    @Override
-    public List<Task> getAllTasks() {
-        List<Task> result = new ArrayList<>();
-        result.addAll(taskStorage.values());
-        result.addAll(epicStorage.values());
-        result.addAll(subTaskStorage.values());
-        return result;
-    }
-
     //History
     @Override
     public List<Task> getHistory() {
         return historyManager.getHistory();
-    }
-
-    protected void insertTask(Task task) {
-        if (task == null) {
-            return;
-        }
-        taskStorage.put(task.getId(), task);
-    }
-
-    protected void insertSubTask(SubTask task) {
-        if (task == null) {
-            return;
-        }
-        subTaskStorage.put(task.getId(), task);
-    }
-
-    protected void insertEpic(Epic task) {
-        if (task == null) {
-            return;
-        }
-        epicStorage.put(task.getId(), task);
-    }
-
-    protected void insertHistory(int taskId) {
-        if (taskStorage.containsKey(taskId)) {
-            historyManager.add(taskStorage.get(taskId));
-        } else if (subTaskStorage.containsKey(taskId)) {
-            historyManager.add(subTaskStorage.get(taskId));
-        } else if (epicStorage.containsKey(taskId)) {
-            historyManager.add(epicStorage.get(taskId));
-        }
-    }
-
-    protected Epic selectEpic(int epicId) {
-        return epicStorage.get(epicId);
     }
 
     private void updateEpicStatus(int epicId) {
