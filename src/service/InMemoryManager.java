@@ -14,7 +14,7 @@ public class InMemoryManager implements TaskManager {
     protected final Map<Integer, Epic> epicStorage;
     protected final Map<Integer, SubTask> subTaskStorage;
     protected final Map<Integer, Task> taskStorage;
-    private int id;
+    protected int id;
     protected final HistoryManager historyManager;
 
     public InMemoryManager(HistoryManager historyManager) {
@@ -29,10 +29,6 @@ public class InMemoryManager implements TaskManager {
     public int getNextId() {
         id++;
         return id;
-    }
-
-    protected void setId(int id) {
-        this.id = id;
     }
 
     //Task

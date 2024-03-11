@@ -183,13 +183,13 @@ public class FileBackedTaskManager extends InMemoryManager {
                 final int taskId = task.getId();
                 switch (task.getTaskType()) {
                     case TASK:
-                        insertTask(task);
+                        taskStorage.put(task.getId(), task);
                         break;
                     case SUBTASK:
-                        insertSubTask((SubTask) task);
+                        subTaskStorage.put(task.getId(), (SubTask) task);
                         break;
                     case EPIC:
-                        insertEpic((Epic) task);
+                        epicStorage.put(task.getId(), (Epic) task);
                         break;
                 }
                 if (maxTaskId < taskId) {
@@ -209,19 +209,7 @@ public class FileBackedTaskManager extends InMemoryManager {
         } catch (IOException | NullPointerException | IllegalArgumentException exception) {
             throw new ManagerLoadException("Error while loading tasks from file", exception);
         }
-        setId(maxTaskId);
-    }
-
-    private void insertTask(Task task) {
-        taskStorage.put(task.getId(), task);
-    }
-
-    private void insertSubTask(SubTask task) {
-        subTaskStorage.put(task.getId(), task);
-    }
-
-    private void insertEpic(Epic task) {
-        epicStorage.put(task.getId(), task);
+        super.id = maxTaskId;
     }
 
     private void insertHistory(int taskId) {
