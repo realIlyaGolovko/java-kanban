@@ -5,6 +5,7 @@ import model.SubTask;
 import model.Task;
 import model.TaskType;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,6 +17,11 @@ public class TaskComparator {
         assertEquals(expected.getDescription(), actual.getDescription(), "Should be the same descriptions");
         assertEquals(expected.getStatus(), actual.getStatus(), "Should be the same statuses");
         assertEquals(expected.getTaskType(), actual.getTaskType(), "Should be the same types");
+        assertEquals(expected.getStartTime().truncatedTo(ChronoUnit.MINUTES),
+                actual.getStartTime().truncatedTo(ChronoUnit.MINUTES), "Should be the same start times");
+        assertEquals(expected.getDuration(), actual.getDuration(), "Should be the same durations");
+        assertEquals(expected.getEndTime().truncatedTo(ChronoUnit.MINUTES),
+                actual.getEndTime().truncatedTo(ChronoUnit.MINUTES), "Should be the same end times");
         if (expected.getTaskType() == TaskType.EPIC) {
             Epic expectedEpic = (Epic) expected;
             Epic actualEpic = (Epic) actual;
