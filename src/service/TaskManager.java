@@ -48,4 +48,6 @@ public interface TaskManager {
     void updateSubTask(SubTask subTask);
 
     void updateEpic(Epic epic);
+
+    List<Task> getPrioritizedTasks();
 }
