@@ -1,5 +1,7 @@
 package model;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class Task {
@@ -8,12 +10,18 @@ public class Task {
     protected String description;
     protected TaskStatus status;
     protected int id;
+    protected Duration duration;
+    protected LocalDateTime startTime;
+    protected LocalDateTime endTime;
 
     public Task(String name, String description, int id) {
         this.name = name;
         this.description = description;
         this.status = TaskStatus.NEW;
         this.id = id;
+        this.duration = Duration.ZERO;
+        this.startTime = LocalDateTime.now();
+        this.endTime = this.startTime.plus(this.duration);
     }
 
     public Task(String name, String description, int id, TaskStatus status) {
@@ -21,6 +29,20 @@ public class Task {
         this.description = description;
         this.id = id;
         this.status = status;
+        this.duration = Duration.ZERO;
+        this.startTime = LocalDateTime.now();
+        this.endTime = this.startTime.plus(this.duration);
+    }
+
+    public Task(String name, String description, TaskStatus status, int id, Duration duration,
+                LocalDateTime startTime) {
+        this.name = name;
+        this.description = description;
+        this.status = status;
+        this.id = id;
+        this.duration = duration;
+        this.startTime = startTime;
+        this.endTime = this.startTime.plus(this.duration);
     }
 
     public TaskType getTaskType() {
@@ -59,6 +81,28 @@ public class Task {
         this.status = status;
     }
 
+    public Duration getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Duration duration) {
+        this.duration = duration;
+        endTime = startTime.plus(this.duration);
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+        endTime = this.startTime.plus(duration);
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -79,7 +123,9 @@ public class Task {
                 ", description='" + description + '\'' +
                 ", status=" + status +
                 ", id=" + id +
-                ", type=" + getTaskType() +
+                ", duration=" + duration +
+                ", startTime=" + startTime +
+                ", endTime=" + endTime +
                 '}';
     }
 }
