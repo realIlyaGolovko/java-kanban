@@ -44,8 +44,7 @@ public class InMemoryManager implements TaskManager {
     //Task
     @Override
     public int createTask(Task task) {
-        Optional.ofNullable(task).orElseThrow(() -> new ValidationException("Task cannot be null."));
-        validateOverlapExecutionTime(task);
+        validateInputTask(task);
         int newTaskId = getNextId();
         task.setId(newTaskId);
         task.setStatus(TaskStatus.NEW);
@@ -56,9 +55,7 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public void updateTask(Task task) {
-        Optional.ofNullable(task)
-                .orElseThrow(() -> new ValidationException("Task cannot be null."));
-        validateOverlapExecutionTime(task);
+        validateInputTask(task);
         int taskId = task.getId();
         Optional.ofNullable(taskStorage.get(taskId))
                 .ifPresentOrElse(original -> {
@@ -103,11 +100,10 @@ public class InMemoryManager implements TaskManager {
     //Subtask
     @Override
     public int createSubTask(SubTask subTask) {
-        Optional.ofNullable(subTask).orElseThrow(() -> new ValidationException("SubTask cannot be null."));
+        validateInputTask(subTask);
         int epicId = subTask.getEpicId();
         Epic epic = epicStorage.get(epicId);
         Optional.ofNullable(epic).orElseThrow(() -> new ValidationException("Epic with id " + epicId + " not found."));
-        validateOverlapExecutionTime(subTask);
         int newSubtaskId = getNextId();
         subTask.setId(newSubtaskId);
         subTask.setStatus(TaskStatus.NEW);
@@ -121,9 +117,7 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public void updateSubTask(SubTask subTask) {
-        Optional.ofNullable(subTask)
-                .orElseThrow(() -> new ValidationException("SubTask cannot be null."));
-        validateOverlapExecutionTime(subTask);
+        validateInputTask(subTask);
         int subTaskId = subTask.getId();
         int epicId = subTask.getEpicId();
         Optional.ofNullable(subTaskStorage.get(subTaskId))
@@ -299,11 +293,14 @@ public class InMemoryManager implements TaskManager {
 
 
     protected void updateEpicTime(int epicId) {
+        Epic epic = epicStorage.get(epicId);
         List<SubTask> childSubTasks = getSubtasksOfEpic(epicId);
         if (childSubTasks.isEmpty()) {
+            epic.setStartTime(null);
+            epic.setEndTime(null);
+            epic.setDuration(null);
             return;
         }
-        Epic epic = epicStorage.get(epicId);
         LocalDateTime minStartTime = LocalDateTime.MAX;
         LocalDateTime maxEndTime = LocalDateTime.MIN;
         Duration sumOfDuration = Duration.ZERO;
@@ -337,7 +334,14 @@ public class InMemoryManager implements TaskManager {
         return firstNotEndBeforeSecondStarts && secondNotEndBeforeFirstStarts;
     }
 
-    protected void validateOverlapExecutionTime(Task task) {
+    protected <T extends Task> void validateInputTask(T task) {
+        Optional.ofNullable(task).orElseThrow(() -> new ValidationException("Task cannot be null."));
+        Optional.ofNullable(task.getStartTime()).orElseThrow(() ->
+                new ValidationException("StartTime cannot be null."));
+        validateOverlapExecutionTime(task);
+    }
+
+    private void validateOverlapExecutionTime(Task task) {
         getPrioritizedTasks().stream()
                 .filter(savedTask -> !(task.equals(savedTask)))
                 .filter(savedTask -> isOverlapInExecutionTime(task, savedTask))

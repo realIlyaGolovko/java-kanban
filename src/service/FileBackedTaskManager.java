@@ -191,13 +191,13 @@ public class FileBackedTaskManager extends InMemoryManager {
                 final int taskId = task.getId();
                 switch (task.getTaskType()) {
                     case TASK -> {
-                        validateOverlapExecutionTime(task);
+                        validateInputTask(task);
                         prioritizedTasks.put(task.getStartTime(), task);
                         taskStorage.put(task.getId(), task);
                     }
                     case SUBTASK -> {
                         SubTask subTask = (SubTask) task;
-                        validateOverlapExecutionTime(subTask);
+                        validateInputTask(subTask);
                         prioritizedTasks.put(subTask.getStartTime(), subTask);
                         subTaskStorage.put(subTask.getId(), subTask);
                     }
@@ -209,10 +209,7 @@ public class FileBackedTaskManager extends InMemoryManager {
             }
             getSubTasks().forEach(subTask -> Optional.ofNullable(epicStorage.get(subTask.getEpicId()))
                     .ifPresent(epic -> epic.addSubTaskId(subTask.getId())));
-            getEpics().forEach(epic -> {
-                updateEpicStatus(epic.getId());
-                updateEpicTime(epic.getId());
-            });
+            getEpics().forEach(epic -> updateEpicTime(epic.getId()));
 
             String historyLine = reader.readLine();
             HistoryConverter.fromString(historyLine).forEach(this::insertHistory);
