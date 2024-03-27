@@ -780,6 +780,35 @@ abstract class TaskManagerTest<T extends TaskManager> {
     }
 
     @Test
+    @DisplayName("Время задачи должно быть null, если начало startTime==null.")
+    public void taskTimeShouldBeNullWhenStartTimeIsNull() {
+        Task task = initRandomTask(duration, null);
+        LocalDateTime actualEndTime = task.getEndTime();
+        LocalDateTime actualStartTime = task.getStartTime();
+
+        assertNull(actualEndTime, "EndTime should be null");
+        assertNull(actualStartTime, "StartTime should be null");
+    }
+
+    @Test
+    @DisplayName("Время задачи должно быть null, если установлено startTime==null.")
+    public void taskTimeShouldBeNullWhenSetStartTimeIsNull() {
+        Task task = initRandomTask(duration, startTime);
+        task.setStartTime(null);
+        LocalDateTime actualEndTime = task.getEndTime();
+        LocalDateTime actualStartTime = task.getStartTime();
+
+        assertNull(actualEndTime, "EndTime should be null");
+        assertNull(actualStartTime, "StartTime should be null");
+    }
+
+    @Test
+    @DisplayName("При попытке создать задачу с пустым startTime, должна быть ошибка.")
+    public void createTaskWithNullStartTimeShouldThrowException() {
+        assertThrows(ValidationException.class, () -> getRandomTask(duration, null));
+    }
+
+    @Test
     @DisplayName("Метод должен возвращать отсортированный по времени начала список задач.")
     public void getPrioritizedTasksShouldReturnListOfTasksSortedByStartTime() {
         Task thirdTask = getRandomTask(duration, startTime.plus(Duration.ofMinutes(40)));
@@ -1030,15 +1059,21 @@ abstract class TaskManagerTest<T extends TaskManager> {
     }
 
     @Test
-    @DisplayName("Время эпика без подзадач,должно быть текущим по-умолчанию.")
+    @DisplayName("Время  начала у эпика без подзадач,должно быть null.")
     public void getEpicStartTimeShouldReturnNullWhenEpicHasNoSubTasks() {
         Epic epic = getRandomEpic();
-        LocalDateTime expectedTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        LocalDateTime expectedStartTime = epic.getStartTime();
 
-        assertEquals(expectedTime, epic.getStartTime().truncatedTo(ChronoUnit.MINUTES),
-                "Should be current time by default");
-        assertEquals(expectedTime, epic.getEndTime().truncatedTo(ChronoUnit.MINUTES),
-                "Should be current time by default");
+        assertNull(expectedStartTime, "StartTime should be null");
+    }
+
+    @Test
+    @DisplayName("Время  начала у эпика без подзадач,должно быть null.")
+    public void getEpicEndTimeShouldReturnNullWhenEpicHasNoSubTasks() {
+        Epic epic = getRandomEpic();
+        LocalDateTime expectedEndTime = epic.getEndTime();
+
+        assertNull(expectedEndTime, "EndTime should be null");
     }
 
     @Test
