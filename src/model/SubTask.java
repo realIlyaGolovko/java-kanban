@@ -38,7 +38,7 @@ public class SubTask extends Task {
                 ", epicId=" + epicId +
                 ", duration=" + duration +
                 ", startTime=" + startTime +
-                ", endTime=" + epicId +
+                ", endTime=" + endTime +
                 '}';
     }
 
