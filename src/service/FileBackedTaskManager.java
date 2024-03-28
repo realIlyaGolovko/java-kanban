@@ -20,6 +20,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 
 import static model.TaskType.EPIC;
 import static model.TaskType.SUBTASK;
@@ -28,12 +29,14 @@ import static model.TaskType.TASK;
 public class FileBackedTaskManager extends InMemoryManager {
     private final File file;
     private final Map<TaskType, Converter> converters;
-    private static final String FILE_HEADER = "id,type,name,status,description,epic" + System.lineSeparator();
+    private static final String FILE_HEADER = "id,type,name,status,description,epic,duration,startTime"
+            + System.lineSeparator();
 
     public FileBackedTaskManager(File file) {
         super(Managers.getDefaultHistory());
         this.file = file;
-        this.converters = Map.of(TASK, new TaskConverter(), TaskType.SUBTASK, new SubTaskConverter(), TaskType.EPIC, new EpicConverter());
+        this.converters = Map.of(TASK, new TaskConverter(), TaskType.SUBTASK, new SubTaskConverter(),
+                TaskType.EPIC, new EpicConverter());
     }
 
     public static FileBackedTaskManager loadFromFile(File file) {
@@ -142,26 +145,31 @@ public class FileBackedTaskManager extends InMemoryManager {
     private void save() {
         try (final BufferedWriter writer = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
             writer.write(FILE_HEADER);
-            for (Task task : getTasks()) {
-                Converter converter = converters.get(TASK);
-                writer.write(converter.toString(task));
-                writer.newLine();
-            }
-            for (Epic epic : getEpics()) {
-                Converter converter = converters.get(EPIC);
-                writer.write(converter.toString(epic));
-                writer.newLine();
-            }
-            for (SubTask subTask : getSubTasks()) {
-                Converter converter = converters.get(SUBTASK);
-                writer.write(converter.toString(subTask));
-                writer.newLine();
-            }
+
+            getTasks().stream()
+                    .map(task -> converters.get(TASK).toString(task))
+                    .forEach(str -> writeWithNewLine(writer, str));
+            getEpics().stream()
+                    .map(epic -> converters.get(EPIC).toString(epic))
+                    .forEach(str -> writeWithNewLine(writer, str));
+            getSubTasks().stream()
+                    .map(subTask -> converters.get(SUBTASK).toString(subTask))
+                    .forEach(str -> writeWithNewLine(writer, str));
+
             writer.newLine();
             writer.write(HistoryConverter.toString(getHistory()));
             writer.newLine();
         } catch (IOException | NullPointerException | IllegalArgumentException exception) {
             throw new ManagerSaveException("Error while saving tasks to file", exception);
+        }
+    }
+
+    private void writeWithNewLine(BufferedWriter writer, String str) {
+        try {
+            writer.write(str);
+            writer.newLine();
+        } catch (IOException exception) {
+            throw new ManagerSaveException("Error while saving tasks= " + str + " to file", exception);
         }
     }
 
@@ -182,30 +190,29 @@ public class FileBackedTaskManager extends InMemoryManager {
                 final Task task = converters.get(parseType(line)).fromString(line);
                 final int taskId = task.getId();
                 switch (task.getTaskType()) {
-                    case TASK:
+                    case TASK -> {
+                        validateInputTask(task);
+                        prioritizedTasks.put(task.getStartTime(), task);
                         taskStorage.put(task.getId(), task);
-                        break;
-                    case SUBTASK:
-                        subTaskStorage.put(task.getId(), (SubTask) task);
-                        break;
-                    case EPIC:
-                        epicStorage.put(task.getId(), (Epic) task);
-                        break;
+                    }
+                    case SUBTASK -> {
+                        SubTask subTask = (SubTask) task;
+                        validateInputTask(subTask);
+                        prioritizedTasks.put(subTask.getStartTime(), subTask);
+                        subTaskStorage.put(subTask.getId(), subTask);
+                    }
+                    case EPIC -> epicStorage.put(task.getId(), (Epic) task);
                 }
                 if (maxTaskId < taskId) {
                     maxTaskId = taskId;
                 }
             }
-            for (SubTask subTask : getSubTasks()) {
-                Epic epic = epicStorage.get(subTask.getEpicId());
-                if (epic != null) {
-                    epic.addSubTaskId(subTask.getId());
-                }
-            }
+            getSubTasks().forEach(subTask -> Optional.ofNullable(epicStorage.get(subTask.getEpicId()))
+                    .ifPresent(epic -> epic.addSubTaskId(subTask.getId())));
+            getEpics().forEach(epic -> updateEpicTime(epic.getId()));
+
             String historyLine = reader.readLine();
-            for (int id : HistoryConverter.fromString(historyLine)) {
-                insertHistory(id);
-            }
+            HistoryConverter.fromString(historyLine).forEach(this::insertHistory);
         } catch (IOException | NullPointerException | IllegalArgumentException exception) {
             throw new ManagerLoadException("Error while loading tasks from file", exception);
         }

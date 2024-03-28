@@ -3,16 +3,22 @@ package converter;
 import model.Task;
 import model.TaskStatus;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 public class TaskConverter implements Converter<Task> {
 
     @Override
     public String toString(Task task) {
-        return String.format("%s,%s,%s,%s,%s",
+        return String.format("%s,%s,%s,%s,%s,%s,%s",
                 task.getId(),
                 task.getTaskType(),
                 task.getName(),
                 task.getStatus(),
-                task.getDescription());
+                task.getDescription(),
+                task.getDuration(),
+                task.getStartTime()
+        );
     }
 
     @Override
@@ -22,6 +28,8 @@ public class TaskConverter implements Converter<Task> {
         String name = columns[2];
         TaskStatus status = TaskStatus.valueOf(columns[3]);
         String description = columns[4];
-        return new Task(name, description, id, status);
+        Duration duration = Duration.parse(columns[5]);
+        LocalDateTime startTime = LocalDateTime.parse(columns[6]);
+        return new Task(name, description, status, id, duration, startTime);
     }
 }

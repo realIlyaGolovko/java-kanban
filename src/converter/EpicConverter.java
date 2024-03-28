@@ -7,12 +7,14 @@ public class EpicConverter implements Converter<Epic> {
 
     @Override
     public String toString(Epic epic) {
-        return String.format("%s,%s,%s,%s,%s",
+        return String.format("%s,%s,%s,%s,%s,%s,%s",
                 epic.getId(),
                 epic.getTaskType(),
                 epic.getName(),
                 epic.getStatus(),
-                epic.getDescription()
+                epic.getDescription(),
+                epic.getDuration(),
+                epic.getStartTime()
         );
     }
 

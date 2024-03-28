@@ -5,7 +5,6 @@ import service.InMemoryManager;
 
 @DisplayName("Тесты менеджера задач в памяти.")
 public class InMemoryManagerTest extends TaskManagerTest<InMemoryManager> {
-    @Override
     @BeforeEach
     public void setUp() {
         //sut -> system under test

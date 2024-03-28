@@ -6,6 +6,7 @@ import model.Task;
 import model.TaskType;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -16,6 +17,13 @@ public class TaskComparator {
         assertEquals(expected.getDescription(), actual.getDescription(), "Should be the same descriptions");
         assertEquals(expected.getStatus(), actual.getStatus(), "Should be the same statuses");
         assertEquals(expected.getTaskType(), actual.getTaskType(), "Should be the same types");
+
+        assertEquals(Optional.ofNullable(expected.getStartTime()),
+                Optional.ofNullable(actual.getStartTime()), "Should be the same start times");
+        assertEquals(expected.getDuration(), actual.getDuration(), "Should be the same durations");
+        assertEquals(Optional.ofNullable(expected.getEndTime()),
+                Optional.ofNullable(actual.getEndTime()), "Should be the same end times");
+
         if (expected.getTaskType() == TaskType.EPIC) {
             Epic expectedEpic = (Epic) expected;
             Epic actualEpic = (Epic) actual;
