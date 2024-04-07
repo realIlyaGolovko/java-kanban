@@ -1,9 +1,9 @@
 package server;
 
 public enum BasePath {
-    TASK("/TASKS", "TASKS"), SUBTASK("/SUBTASKS", "SUBTASKS"),
-    EPIC("/EPICS", "EPICS"), HISTORY("/HISTORY", "HISTORY"),
-    PRIORITY("/PRIORITIZED", "PRIORITIZED");
+    TASK("/tasks", "tasks"), SUBTASK("/subtasks", "subtasks"),
+    EPIC("/epics", "epics"), HISTORY("/history", "history"),
+    PRIORITY("/prioritized", "prioritized");
     private final String root;
     private final String value;
 

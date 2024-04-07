@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -320,6 +321,30 @@ public class HttpServerIntegrationTest {
     }
 
     @Test
+    @DisplayName("Должен выбросить исключение, если тело POST запроса для эпика пустое.")
+    void shouldTrowsExceptionWhenEpicPostBodyIsEmpty() throws IOException, InterruptedException {
+        var response = TestHttpClient.postEpic(null);
+
+        assertEquals(HTTP_BAD_REQUEST, response.statusCode());
+    }
+
+    @Test
+    @DisplayName("Должен выбросить исключение, если тело POST запроса для подзадачи пустое.")
+    void shouldTrowsExceptionWhenSubTaskPostBodyIsEmpty() throws IOException, InterruptedException {
+        var response = TestHttpClient.postSubTask(null);
+
+        assertEquals(HTTP_BAD_REQUEST, response.statusCode());
+    }
+
+    @Test
+    @DisplayName("Должен выбросить исключение, если тело POST запроса для задачи пустое.")
+    void shouldTrowsExceptionWhenTaskPostBodyIsEmpty() throws IOException, InterruptedException {
+        var response = TestHttpClient.postTask(null);
+
+        assertEquals(HTTP_BAD_REQUEST, response.statusCode());
+    }
+
+    @Test
     @DisplayName("Должен удалить эпик.")
     void shouldDeleteEpic() throws IOException, InterruptedException {
         int savedEpicId = manager.createEpic(initRandomEpic());
@@ -355,5 +380,4 @@ public class HttpServerIntegrationTest {
         assertEquals(HTTP_OK, response.statusCode());
         assertTrue(actual.isEmpty());
     }
-
 }

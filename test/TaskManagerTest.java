@@ -131,7 +131,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При создании null задачи, должна быть ошибка.")
     public void createTaskWithNullShouldReturnErrorCode() {
-        assertThrows(NotFoundException.class, () -> sut.createTask(null),
+        assertThrows(NullPointerException.class, () -> sut.createTask(null),
                 "Should be the ValidationException");
     }
 
@@ -151,7 +151,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При изменении null задачи, должна быть ошибка.")
     public void updateTaskWithNullShouldReturnErrorCode() {
-        assertThrows(NotFoundException.class, () -> sut.updateTask(null),
+        assertThrows(NullPointerException.class, () -> sut.updateTask(null),
                 "Should be the exception");
     }
 
@@ -237,7 +237,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При попытке сохранить пустой эпик, должен возвращать код ошибки.")
     public void createEpicWithNullShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.createEpic(null), "Should be exception");
+        assertThrows(NullPointerException.class, () -> sut.createEpic(null), "Should be exception");
     }
 
     @Test
@@ -385,7 +385,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Должно выбрасываться исключение, при попытке сохранить подзадачу с null.")
     public void createSubTaskWithNullShouldReturnErrorCode() {
-        assertThrows(NotFoundException.class, () -> sut.createSubTask(null), "Should throw exception");
+        assertThrows(NullPointerException.class, () -> sut.createSubTask(null), "Should throw exception");
     }
 
     @Test
@@ -407,7 +407,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При обновлении null подзадачи, должна быть ошибка.")
     public void updateSubTaskWithNullShouldReturnErrorCode() {
-        assertThrows(NotFoundException.class, () -> sut.updateSubTask(null), "Should throw exception");
+        assertThrows(NullPointerException.class, () -> sut.updateSubTask(null), "Should throw exception");
     }
 
     @Test

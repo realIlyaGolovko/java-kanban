@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -35,7 +36,7 @@ public abstract class BaseHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         try {
             String response = prepareResponse(exchange);
-            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=" + DEFAULT_CHARSET);
+            exchange.getResponseHeaders().set("Content-Type", "application/json; charset=" + DEFAULT_CHARSET);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
             }
@@ -47,9 +48,15 @@ public abstract class BaseHandler implements HttpHandler {
     }
 
     protected void errorHandle(HttpExchange exchange, Exception exception) throws IOException {
-        int responseCode = (exception instanceof ValidationException) ? HTTP_NOT_ACCEPTABLE :
-                (exception instanceof NotFoundException) ? HTTP_NOT_FOUND : HTTP_INTERNAL_ERROR;
+        int responseCode;
+        responseCode = switch (exception) {
+            case ValidationException validationException -> HTTP_NOT_ACCEPTABLE;
+            case NotFoundException notFoundException -> HTTP_NOT_FOUND;
+            case NullPointerException nullPointerException -> HTTP_BAD_REQUEST;
+            default -> HTTP_INTERNAL_ERROR;
+        };
         writeResponse(exchange, responseCode, gson.toJson(exception.getMessage()));
+
     }
 
     protected List<String> getPath(HttpExchange exchange) {
@@ -57,7 +64,6 @@ public abstract class BaseHandler implements HttpHandler {
                         .getRequestURI()
                         .getPath()
                         .trim()
-                        .toUpperCase()
                         .split("/"))
                 .filter(text -> !text.isBlank())
                 .toList();

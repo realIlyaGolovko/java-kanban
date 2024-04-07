@@ -189,7 +189,7 @@ public class InMemoryManager implements TaskManager {
     //Epic
     @Override
     public int createEpic(Epic epic) {
-        Optional.ofNullable(epic).orElseThrow(() -> new ValidationException("Epic cannot be null"));
+        Optional.ofNullable(epic).orElseThrow(() -> new NullPointerException("Epic cannot be null"));
         int newEpicId = getNextId();
         epic.setId(newEpicId);
         epic.setStatus(TaskStatus.NEW);
@@ -242,7 +242,7 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public void updateEpic(Epic epic) {
-        Optional.ofNullable(epic).orElseThrow(() -> new ValidationException("Epic cannot be null"));
+        Optional.ofNullable(epic).orElseThrow(() -> new NullPointerException("Epic cannot be null"));
         Optional.ofNullable(epicStorage.get(epic.getId()))
                 .ifPresentOrElse(originalEpic -> {
                             originalEpic.setName(epic.getName());
@@ -336,7 +336,7 @@ public class InMemoryManager implements TaskManager {
     }
 
     protected <T extends Task> void validateInputTask(T task) {
-        Optional.ofNullable(task).orElseThrow(() -> new NotFoundException("Task cannot be null."));
+        Optional.ofNullable(task).orElseThrow(() -> new NullPointerException("Task cannot be null."));
         Optional.ofNullable(task.getStartTime()).orElseThrow(() ->
                 new ValidationException("StartTime cannot be null."));
         validateOverlapExecutionTime(task);
@@ -353,4 +353,3 @@ public class InMemoryManager implements TaskManager {
                 });
     }
 }
-
