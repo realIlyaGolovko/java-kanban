@@ -11,8 +11,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TaskComparator {
-    public static <T extends Task> void compareTasks(T expected, T actual) {
-        assertEquals(expected.getId(), actual.getId(), "Should be the same Ids");
+
+    public static <T extends Task> void compareTasksWithoutId(T expected, T actual) {
         assertEquals(expected.getName(), actual.getName(), "Should be the same names");
         assertEquals(expected.getDescription(), actual.getDescription(), "Should be the same descriptions");
         assertEquals(expected.getStatus(), actual.getStatus(), "Should be the same statuses");
@@ -35,6 +35,11 @@ public class TaskComparator {
             assertEquals(expectedSubTask.getEpicId(), actualSubTask.getEpicId(), "Should be the same epicIds");
 
         }
+    }
+
+    public static <T extends Task> void compareTasks(T expected, T actual) {
+        assertEquals(expected, actual, "Should be the same Ids");
+        compareTasksWithoutId(expected, actual);
     }
 
     public static <T extends Task> void compareListOfTasks(List<T> expected, List<T> actual) {
