@@ -17,6 +17,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static util.check.TaskComparator.compareListOfTasks;
 import static util.check.TaskComparator.compareTasks;
+import static util.testdata.RandomTask.random;
 
 @DisplayName("Тесты менеджера задач из файла")
 public class FileBackedTaskManagerIntegrationTest extends TaskManagerTest<FileBackedTaskManager> {
