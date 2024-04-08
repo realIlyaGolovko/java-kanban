@@ -1,3 +1,4 @@
+import exception.NotFoundException;
 import exception.ValidationException;
 import model.Epic;
 import model.SubTask;
@@ -6,13 +7,13 @@ import model.TaskStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import service.TaskManager;
+import util.testdata.RandomTask;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -25,79 +26,53 @@ import static util.check.TaskComparator.compareTasks;
 abstract class TaskManagerTest<T extends TaskManager> {
     //sut -> system under test
     protected T sut;
-    protected static final Random random = new Random();
 
     protected LocalDateTime startTime = LocalDateTime.now();
     //just random value for testing
     protected Duration duration = Duration.ofMinutes(10);
 
-    protected Task initRandomTask() {
-        return new Task("taskName" + random.nextInt(), "taskDescription" + random.nextInt(),
-                random.nextInt());
-    }
-
-    protected Task initRandomTask(Duration duration, LocalDateTime startTime) {
-        return new Task("taskName" + random.nextInt(), "taskDescription" + random.nextInt(),
-                TaskStatus.NEW, random.nextInt(), duration, startTime);
-    }
-
     protected Task getRandomTask() {
-        Task task = initRandomTask();
+        Task task = RandomTask.initRandomTask();
         sut.createTask(task);
         return task;
     }
 
     protected Task getRandomTask(Duration duration, LocalDateTime startTime) {
-        Task task = initRandomTask(duration, startTime);
+        Task task = RandomTask.initRandomTask(duration, startTime);
         sut.createTask(task);
         return task;
     }
 
     protected List<Task> getRandomTasks() {
         List<Task> tasks = new ArrayList<>();
-        for (int i = 1; i < random.nextInt(5); i++) {
+        for (int i = 1; i < RandomTask.random.nextInt(5); i++) {
             tasks.add(getRandomTask());
         }
         return tasks;
     }
 
-    protected Epic initRandomEpic() {
-        return new Epic("epicName" + random.nextInt(), "epicDescription" + random.nextInt(),
-                random.nextInt());
-    }
-
     protected Epic getRandomEpic() {
-        Epic epic = initRandomEpic();
+        Epic epic = RandomTask.initRandomEpic();
         sut.createEpic(epic);
         return epic;
     }
 
     protected List<Epic> getRandomEpics() {
         List<Epic> epics = new ArrayList<>();
-        for (int i = 0; i < random.nextInt(5); i++) {
+        for (int i = 0; i < RandomTask.random.nextInt(5); i++) {
             epics.add(getRandomEpic());
         }
         return epics;
     }
 
-    protected SubTask initRandomSubTask(int epicId) {
-        return new SubTask("subTaskName" + random.nextInt(), "subTaskDescription" + random.nextInt(),
-                random.nextInt(), epicId);
-    }
-
-    protected SubTask initRandomSubTask(int epicId, Duration duration, LocalDateTime startTime) {
-        return new SubTask("subTaskName" + random.nextInt(), "subTaskDescription" + random.nextInt(),
-                random.nextInt(), TaskStatus.NEW, epicId, duration, startTime);
-    }
-
     protected SubTask getRandomSubTask(int epicId) {
-        SubTask subTask = initRandomSubTask(epicId);
+        SubTask subTask = RandomTask.initRandomSubTask(epicId);
         sut.createSubTask(subTask);
         return subTask;
     }
 
     protected SubTask getRandomSubTask(int epicId, Duration duration, LocalDateTime startTime) {
-        SubTask subTask = initRandomSubTask(epicId, duration, startTime);
+        SubTask subTask = RandomTask.initRandomSubTask(epicId, duration, startTime);
         sut.createSubTask(subTask);
         return subTask;
     }
@@ -141,14 +116,10 @@ abstract class TaskManagerTest<T extends TaskManager> {
         sut.getEpic(epic.getId());
     }
 
-    protected Duration getRandomDuration() {
-        return Duration.ofMinutes(random.nextInt());
-    }
-
     @Test
     @DisplayName("При создании задачи, она должна сохраняться в памяти в статусе NEW.")
     public void createTaskShouldSaveNewTask() {
-        Task expected = initRandomTask();
+        Task expected = RandomTask.initRandomTask();
 
         int savedTask = sut.createTask(expected);
         Task actual = sut.getTask(savedTask);
@@ -160,7 +131,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При создании null задачи, должна быть ошибка.")
     public void createTaskWithNullShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.createTask(null),
+        assertThrows(NullPointerException.class, () -> sut.createTask(null),
                 "Should be the ValidationException");
     }
 
@@ -180,14 +151,14 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При изменении null задачи, должна быть ошибка.")
     public void updateTaskWithNullShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.updateTask(null),
+        assertThrows(NullPointerException.class, () -> sut.updateTask(null),
                 "Should be the exception");
     }
 
     @Test
     @DisplayName("При изменении несуществующей задачи, она должна быть создана.")
     public void updateTaskWithNotExistingIdShouldCreateNewTask() {
-        Task expected = initRandomTask();
+        Task expected = RandomTask.initRandomTask();
 
         sut.updateTask(expected);
         Task actual = sut.getTask(expected.getId());
@@ -199,7 +170,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Если задачи не существует, должен возвращаться null")
     public void getInvalidTaskShouldReturnNull() {
-        assertThrows(ValidationException.class, () -> sut.getTask(random.nextInt()),
+        assertThrows(NotFoundException.class, () -> sut.getTask(RandomTask.random.nextInt()),
                 "Should be the exception");
     }
 
@@ -217,7 +188,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При удалении несуществующей задачи, должна быть ошибка.")
     public void deleteTaskWithInvalidIdShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.deleteTask(random.nextInt()),
+        assertThrows(NotFoundException.class, () -> sut.deleteTask(RandomTask.random.nextInt()),
                 "Should be the exception");
     }
 
@@ -253,7 +224,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Должен сохранять эпик в памяти в статусе NEW.")
     public void createEpicShouldSaveNewEpic() {
-        Epic expected = initRandomEpic();
+        Epic expected = RandomTask.initRandomEpic();
 
         int savedEpic = sut.createEpic(expected);
         Epic actual = sut.getEpic(savedEpic);
@@ -266,7 +237,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При попытке сохранить пустой эпик, должен возвращать код ошибки.")
     public void createEpicWithNullShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.createEpic(null), "Should be exception");
+        assertThrows(NullPointerException.class, () -> sut.createEpic(null), "Should be exception");
     }
 
     @Test
@@ -329,7 +300,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При обновлении несуществующего эпика, должен создать новый.")
     public void updateEpicShouldCreateNewEpicIfThisEpicNotExist() {
-        Epic expectedEpic = initRandomEpic();
+        Epic expectedEpic = RandomTask.initRandomEpic();
 
         sut.updateEpic(expectedEpic);
         Epic actual = sut.getEpic(expectedEpic.getId());
@@ -338,11 +309,9 @@ abstract class TaskManagerTest<T extends TaskManager> {
     }
 
     @Test
-    @DisplayName("Если эпика не существует, должен возвращаться null")
+    @DisplayName("Если эпика не существует, должно выбрасываться исключение.")
     public void getInvalidEpicShouldReturnNull() {
-        Epic actual = sut.getEpic(random.nextInt());
-
-        assertNull(actual, "Should not be found");
+        assertThrows(NotFoundException.class, () -> sut.getEpic(RandomTask.random.nextInt()));
     }
 
     @Test
@@ -351,9 +320,9 @@ abstract class TaskManagerTest<T extends TaskManager> {
         Epic saved = getRandomEpic();
 
         sut.deleteEpic(saved.getId());
-        Epic actual = sut.getEpic(saved.getId());
+        List<Epic> actual = sut.getEpics();
 
-        assertNull(actual, "Should not be found");
+        assertTrue(actual.isEmpty());
     }
 
     @Test
@@ -363,10 +332,8 @@ abstract class TaskManagerTest<T extends TaskManager> {
         getRandomSubTasksByEpic(epic.getId(), 3);
 
         sut.deleteEpic(epic.getId());
-        Epic actual = sut.getEpic(epic.getId());
-        List<SubTask> actualSubTasks = sut.getSubtasksOfEpic(epic.getId());
+        List<SubTask> actualSubTasks = sut.getSubTasks();
 
-        assertNull(actual, "Should not be found");
         assertTrue(actualSubTasks.isEmpty(), "Should be empty");
     }
 
@@ -399,9 +366,9 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Должен сохранять новую подзадачу в памяти.")
     public void createSubtaskShouldSaveNewSubtaskWithParent() {
-        Epic epic = initRandomEpic();
+        Epic epic = RandomTask.initRandomEpic();
         int createdEpic = sut.createEpic(epic);
-        SubTask expected = initRandomSubTask(createdEpic);
+        SubTask expected = RandomTask.initRandomSubTask(createdEpic);
 
         int savedSubTask = sut.createSubTask(expected);
         SubTask actual = sut.getSubTask(savedSubTask);
@@ -412,13 +379,13 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Сабтаска не должны сохраняться в памяти, при попытке сохранить подзадачу с несуществующим эпиком.")
     public void createSubTaskWithInvalidEpicShouldNotSave() {
-        assertThrows(ValidationException.class, () -> sut.createSubTask(initRandomSubTask(random.nextInt())));
+        assertThrows(NotFoundException.class, () -> sut.createSubTask(RandomTask.initRandomSubTask(RandomTask.random.nextInt())));
     }
 
     @Test
-    @DisplayName("Должен возвращать код ошибки, при попытке сохранить подзадачу с null.")
+    @DisplayName("Должно выбрасываться исключение, при попытке сохранить подзадачу с null.")
     public void createSubTaskWithNullShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.createSubTask(null), "Should throw exception");
+        assertThrows(NullPointerException.class, () -> sut.createSubTask(null), "Should throw exception");
     }
 
     @Test
@@ -440,14 +407,14 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("При обновлении null подзадачи, должна быть ошибка.")
     public void updateSubTaskWithNullShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.updateSubTask(null), "Should throw exception");
+        assertThrows(NullPointerException.class, () -> sut.updateSubTask(null), "Should throw exception");
     }
 
     @Test
     @DisplayName("При обновлении несуществующей подзадачи, она должна быть создана.")
     public void updateSubTaskWithNewSubTaskShouldCreateNewSubTask() {
         int epicId = getRandomEpic().getId();
-        SubTask expectedSubTask = initRandomSubTask(epicId);
+        SubTask expectedSubTask = RandomTask.initRandomSubTask(epicId);
         sut.updateSubTask(expectedSubTask);
 
         SubTask actual = sut.getSubTask(expectedSubTask.getId());
@@ -463,15 +430,15 @@ abstract class TaskManagerTest<T extends TaskManager> {
         SubTask saved = getRandomSubTask(epic.getId());
 
         sut.deleteSubTask(saved.getId());
-        SubTask actual = sut.getSubTask(saved.getId());
+        List<SubTask> actual = sut.getSubTasks();
 
-        assertNull(actual, "Should not be found");
+        assertTrue(actual.isEmpty());
     }
 
     @Test
     @DisplayName("При удалении несуществующей подзадачи, должна быть ошибка.")
     public void deleteSubTaskWithInvalidIdShouldReturnErrorCode() {
-        assertThrows(ValidationException.class, () -> sut.deleteSubTask(-1),
+        assertThrows(NotFoundException.class, () -> sut.deleteSubTask(-1),
                 "Should throw exception");
     }
 
@@ -675,7 +642,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("В истории не должно быть null.")
     public void historyShouldNotContainNull() {
-        assertThrows(ValidationException.class, () -> sut.getTask(random.nextInt()), "Should be exception");
+        assertThrows(NotFoundException.class, () -> sut.getTask(RandomTask.random.nextInt()), "Should be exception");
     }
 
     @Test
@@ -734,7 +701,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Метод должен возвращать сумму даты начала и длительности задачи.")
     public void getEndTimeShouldReturnTheEndTimeOfTheTask() {
-        Duration durationOfTask = getRandomDuration();
+        Duration durationOfTask = RandomTask.getRandomDuration();
         LocalDateTime startOfTask = LocalDateTime.now();
         LocalDateTime expectedTime = startOfTask.plus(durationOfTask);
         Task task = getRandomTask(durationOfTask, startOfTask);
@@ -747,7 +714,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Установка нового начала задачи, должно обновлять ее окончание.")
     public void setStartTimeShouldUpdateEndTime() {
-        Task task = initRandomTask(duration, startTime);
+        Task task = RandomTask.initRandomTask(duration, startTime);
         LocalDateTime expectedStartTime = LocalDateTime.of(2024, 1, 1, 13, 0);
 
         task.setStartTime(expectedStartTime);
@@ -759,7 +726,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Установка новой длительности задачи, должно обновлять ее окончание.")
     public void setDurationTimeShouldUpdateEndTime() {
-        Task task = initRandomTask(duration, startTime);
+        Task task = RandomTask.initRandomTask(duration, startTime);
         Duration expectedDuration = Duration.ofMinutes(20);
 
         task.setDuration(expectedDuration);
@@ -782,7 +749,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Время задачи должно быть null, если начало startTime==null.")
     public void taskTimeShouldBeNullWhenStartTimeIsNull() {
-        Task task = initRandomTask(duration, null);
+        Task task = RandomTask.initRandomTask(duration, null);
         LocalDateTime actualEndTime = task.getEndTime();
         LocalDateTime actualStartTime = task.getStartTime();
 
@@ -793,7 +760,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Время задачи должно быть null, если установлено startTime==null.")
     public void taskTimeShouldBeNullWhenSetStartTimeIsNull() {
-        Task task = initRandomTask(duration, startTime);
+        Task task = RandomTask.initRandomTask(duration, startTime);
         task.setStartTime(null);
         LocalDateTime actualEndTime = task.getEndTime();
         LocalDateTime actualStartTime = task.getStartTime();
@@ -828,7 +795,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Задача с уникальным интервалом, ранее существующего должна быть сохранена.")
     public void createTaskShouldSaveTaskWithSmallerUniqueInterval() {
         getRandomTask(duration, startTime);
-        Task expectedTask = initRandomTask(duration, startTime.minus(Duration.ofMinutes(20)));
+        Task expectedTask = RandomTask.initRandomTask(duration, startTime.minus(Duration.ofMinutes(20)));
 
         int actualTaskId = sut.createTask(expectedTask);
         Task actualTask = sut.getTask(actualTaskId);
@@ -840,7 +807,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Задача с уникальным интервалом, позже существующего должна быть сохранена.")
     public void createTaskShouldSaveTaskWithBiggerUniqueInterval() {
         getRandomTask(duration, startTime);
-        Task expectedTask = initRandomTask(duration, startTime.plus(Duration.ofMinutes(20)));
+        Task expectedTask = RandomTask.initRandomTask(duration, startTime.plus(Duration.ofMinutes(20)));
 
         int actualTaskId = sut.createTask(expectedTask);
         Task actualTask = sut.getTask(actualTaskId);
@@ -852,7 +819,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Ошибка при создании задачи, когда ее начало пересекается с существующим интервалом.")
     public void createTaskShouldThrowExceptionWhenStartTimeIntersects() {
         getRandomTask(duration, startTime);
-        Task task = initRandomTask(duration, startTime.plus(Duration.ofMinutes(5)));
+        Task task = RandomTask.initRandomTask(duration, startTime.plus(Duration.ofMinutes(5)));
 
         assertThrows(ValidationException.class, () -> sut.createTask(task), "Should throw exception");
     }
@@ -861,7 +828,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Ошибка при создании задачи, когда ее окончание пересекается с существующим интервалом.")
     public void createTaskShouldThrowExceptionWhenEndTimeIntersects() {
         getRandomTask(duration, startTime);
-        Task task = initRandomTask(duration, startTime.minus(Duration.ofMinutes(5)));
+        Task task = RandomTask.initRandomTask(duration, startTime.minus(Duration.ofMinutes(5)));
 
         assertThrows(ValidationException.class, () -> sut.createTask(task), "Should throw exception");
     }
@@ -870,7 +837,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Ошибка при создании задачи, когда ее интервал полностью совпадает с существующим интервалом.")
     public void createTaskShouldThrowExceptionWhenIntervalEquals() {
         getRandomTask(duration, startTime);
-        Task task = initRandomTask(duration, startTime);
+        Task task = RandomTask.initRandomTask(duration, startTime);
 
         assertThrows(ValidationException.class, () -> sut.createTask(task), "Should throw exception");
     }
@@ -879,7 +846,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Ошибка при создании задачи, когда ее интервал включает существующий интервал.")
     public void createTaskShouldThrowExceptionWhenIntervalIncludes() {
         getRandomTask(duration, startTime);
-        Task task = initRandomTask(Duration.ZERO, startTime.plus(Duration.ofMinutes(5)));
+        Task task = RandomTask.initRandomTask(Duration.ZERO, startTime.plus(Duration.ofMinutes(5)));
 
         assertThrows(ValidationException.class, () -> sut.createTask(task), "Should throw exception");
     }
@@ -900,7 +867,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     @DisplayName("Задача без обновления интервала, должна быть сохранена.")
     public void updateTaskShouldSaveTaskWithSameInterval() {
-        Task expectedTask = getRandomTask(getRandomDuration(), startTime);
+        Task expectedTask = getRandomTask(RandomTask.getRandomDuration(), startTime);
         expectedTask.setStartTime(startTime);
 
         sut.updateTask(expectedTask);
@@ -963,7 +930,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     @DisplayName("Создание подзадачи должно добавлять ее в список приоритизированных задач.")
     public void createSubTaskShouldAddSubTaskToPrioritizedTasks() {
         Epic epic = getRandomEpic();
-        SubTask expectedSubTask = initRandomSubTask(epic.getId());
+        SubTask expectedSubTask = RandomTask.initRandomSubTask(epic.getId());
 
         sut.createSubTask(expectedSubTask);
         List<Task> actualTasks = sut.getPrioritizedTasks();
@@ -976,7 +943,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
     public void createSubTaskShouldThrowExceptionWhenIntervalIntersects() {
         Epic epic = getRandomEpic();
         getRandomSubTask(epic.getId(), duration, startTime);
-        SubTask subTaskWithIntersectedInterval = initRandomSubTask(epic.getId(), duration, startTime);
+        SubTask subTaskWithIntersectedInterval = RandomTask.initRandomSubTask(epic.getId(), duration, startTime);
 
         assertThrows(ValidationException.class, () -> sut.createSubTask(subTaskWithIntersectedInterval),
                 "Should be exception");

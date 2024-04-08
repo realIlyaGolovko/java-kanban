@@ -1,5 +1,6 @@
 package service;
 
+import exception.NotFoundException;
 import exception.ValidationException;
 import model.Epic;
 import model.SubTask;
@@ -9,7 +10,6 @@ import model.TaskStatus;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +78,7 @@ public class InMemoryManager implements TaskManager {
     @Override
     public void deleteTask(int taskId) {
         Task original = taskStorage.get(taskId);
-        Optional.ofNullable(original).orElseThrow(() -> new ValidationException("Task " + taskId + " does not exist."));
+        Optional.ofNullable(original).orElseThrow(() -> new NotFoundException("Task " + taskId + " does not exist."));
         prioritizedTasks.remove(original.getStartTime());
         historyManager.remove(taskId);
         taskStorage.remove(taskId);
@@ -87,7 +87,7 @@ public class InMemoryManager implements TaskManager {
     @Override
     public Task getTask(int taskId) {
         Task task = taskStorage.get(taskId);
-        Optional.ofNullable(task).orElseThrow(() -> new ValidationException("Task with id " + taskId + " not found."));
+        Optional.ofNullable(task).orElseThrow(() -> new NotFoundException("Task with id " + taskId + " not found."));
         historyManager.add(task);
         return task;
     }
@@ -103,7 +103,7 @@ public class InMemoryManager implements TaskManager {
         validateInputTask(subTask);
         int epicId = subTask.getEpicId();
         Epic epic = epicStorage.get(epicId);
-        Optional.ofNullable(epic).orElseThrow(() -> new ValidationException("Epic with id " + epicId + " not found."));
+        Optional.ofNullable(epic).orElseThrow(() -> new NotFoundException("Epic with id " + epicId + " not found."));
         int newSubtaskId = getNextId();
         subTask.setId(newSubtaskId);
         subTask.setStatus(TaskStatus.NEW);
@@ -138,7 +138,7 @@ public class InMemoryManager implements TaskManager {
     public void deleteSubTask(int subTaskId) {
         SubTask original = subTaskStorage.get(subTaskId);
         Optional.ofNullable(original).orElseThrow(() ->
-                new ValidationException("SubTask with id " + subTaskId + " not found."));
+                new NotFoundException("SubTask with id " + subTaskId + " not found."));
         LocalDateTime prevStartTime = original.getStartTime();
         Epic epic = epicStorage.get(original.getEpicId());
         subTaskStorage.remove(subTaskId);
@@ -157,6 +157,8 @@ public class InMemoryManager implements TaskManager {
     @Override
     public SubTask getSubTask(int subTaskId) {
         SubTask subTask = subTaskStorage.get(subTaskId);
+        Optional.ofNullable(subTask).orElseThrow(() -> new NotFoundException("SubTask with id " +
+                subTask + " not found."));
         historyManager.add(subTask);
         return subTask;
     }
@@ -177,19 +179,17 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public List<SubTask> getSubtasksOfEpic(int epicId) {
-        return Optional.ofNullable(epicStorage.get(epicId))
-                .map(Epic::getSubTaskIds)
-                .orElseGet(Collections::emptyList)
-                .stream()
+        Epic epic = Optional.ofNullable(epicStorage.get(epicId))
+                .orElseThrow(() -> new NotFoundException("Epic with id " + epicId + " not found."));
+        return epic.getSubTaskIds().stream()
                 .map(subTaskStorage::get)
-                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     //Epic
     @Override
     public int createEpic(Epic epic) {
-        Optional.ofNullable(epic).orElseThrow(() -> new ValidationException("Epic cannot be null"));
+        Optional.ofNullable(epic).orElseThrow(() -> new NullPointerException("Epic cannot be null"));
         int newEpicId = getNextId();
         epic.setId(newEpicId);
         epic.setStatus(TaskStatus.NEW);
@@ -205,6 +205,7 @@ public class InMemoryManager implements TaskManager {
     @Override
     public Epic getEpic(int epicId) {
         Epic epic = epicStorage.get(epicId);
+        Optional.ofNullable(epic).orElseThrow(() -> new NotFoundException("Epic with id " + epicId + " not found."));
         historyManager.add(epic);
         return epic;
     }
@@ -225,7 +226,7 @@ public class InMemoryManager implements TaskManager {
     @Override
     public void deleteEpic(int epicId) {
         Optional.ofNullable(epicStorage.get(epicId))
-                .orElseThrow(() -> new ValidationException("Epic with id= " + epicId + " not found"))
+                .orElseThrow(() -> new NotFoundException("Epic with id= " + epicId + " not found"))
                 .getSubTaskIds().stream()
                 .map(subTaskStorage::get)
                 .forEach(subTask -> Optional.ofNullable(subTask)
@@ -241,7 +242,7 @@ public class InMemoryManager implements TaskManager {
 
     @Override
     public void updateEpic(Epic epic) {
-        Optional.ofNullable(epic).orElseThrow(() -> new ValidationException("Epic cannot be null"));
+        Optional.ofNullable(epic).orElseThrow(() -> new NullPointerException("Epic cannot be null"));
         Optional.ofNullable(epicStorage.get(epic.getId()))
                 .ifPresentOrElse(originalEpic -> {
                             originalEpic.setName(epic.getName());
@@ -335,7 +336,7 @@ public class InMemoryManager implements TaskManager {
     }
 
     protected <T extends Task> void validateInputTask(T task) {
-        Optional.ofNullable(task).orElseThrow(() -> new ValidationException("Task cannot be null."));
+        Optional.ofNullable(task).orElseThrow(() -> new NullPointerException("Task cannot be null."));
         Optional.ofNullable(task.getStartTime()).orElseThrow(() ->
                 new ValidationException("StartTime cannot be null."));
         validateOverlapExecutionTime(task);
@@ -352,4 +353,3 @@ public class InMemoryManager implements TaskManager {
                 });
     }
 }
-
